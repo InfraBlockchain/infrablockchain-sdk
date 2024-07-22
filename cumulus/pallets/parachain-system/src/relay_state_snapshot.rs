@@ -84,8 +84,6 @@ pub enum Error {
 	UpgradeGoAhead(ReadEntryErr),
 	/// The upgrade restriction signal cannot be read.
 	UpgradeRestriction(ReadEntryErr),
-	/// The updated infra system config cannot be read
-	UpdatedInfraSystemConfig(ReadEntryErr),
 	/// The host configuration cannot be extracted.
 	Config(ReadEntryErr),
 	/// The DMQ MQC head cannot be extracted.
@@ -170,7 +168,7 @@ impl RelayChainStateProof {
 	) -> Result<Self, Error> {
 		let db = proof.into_memory_db::<HashingFor<relay_chain::Block>>();
 		if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) {
-			return Err(Error::RootMismatch);
+			return Err(Error::RootMismatch)
 		}
 		let trie_backend = TrieBackendBuilder::new(db, relay_parent_storage_root).build();
 
@@ -180,8 +178,6 @@ impl RelayChainStateProof {
 	/// Read the [`MessagingStateSnapshot`] from the relay chain state proof.
 	///
 	/// Returns an error if anything failed at reading or decoding.
-	///
-	/// You must update keys for `cumulus/client/parachain-inherent/src/lib.rs` to query from RC state
 	pub fn read_messaging_state_snapshot(
 		&self,
 		host_config: &AbridgedHostConfiguration,
@@ -278,11 +274,6 @@ impl RelayChainStateProof {
 			ingress_channels,
 			egress_channels,
 		})
-	}
-
-	pub fn read_active_system_config(&self) -> Result<relay_chain::SystemConfig, Error> {
-		read_entry(&self.trie_backend, relay_chain::well_known_keys::ACTIVE_SYSTEM_CONFIG, None)
-			.map_err(Error::UpdatedInfraSystemConfig)
 	}
 
 	/// Read the [`AbridgedHostConfiguration`] from the relay chain state proof.

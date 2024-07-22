@@ -402,14 +402,27 @@ impl<
 		asset: Self::AssetId,
 		who: &AccountId,
 		amount: Self::Balance,
+		preservation: Preservation,
 		precision: Precision,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
 		match Criterion::convert(asset) {
-			Left(a) =>
-				<Left as fungibles::Mutate<AccountId>>::burn_from(a, who, amount, precision, force),
-			Right(a) =>
-				<Right as fungibles::Mutate<AccountId>>::burn_from(a, who, amount, precision, force),
+			Left(a) => <Left as fungibles::Mutate<AccountId>>::burn_from(
+				a,
+				who,
+				amount,
+				preservation,
+				precision,
+				force,
+			),
+			Right(a) => <Right as fungibles::Mutate<AccountId>>::burn_from(
+				a,
+				who,
+				amount,
+				preservation,
+				precision,
+				force,
+			),
 		}
 	}
 	fn shelve(
@@ -939,24 +952,24 @@ impl<
 	> fungibles::metadata::Inspect<AccountId>
 	for UnionOf<Left, Right, Criterion, AssetKind, AccountId, Reanchor>
 {
-	fn name(asset: &Self::AssetId) -> Vec<u8> {
+	fn name(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset.clone()) {
-			Left(a) => <Left as fungibles::metadata::Inspect<AccountId>>::name(&a),
-			Right(a) => <Right as fungibles::metadata::Inspect<AccountId>>::name(&a),
+			Left(a) => <Left as fungibles::metadata::Inspect<AccountId>>::name(a),
+			Right(a) => <Right as fungibles::metadata::Inspect<AccountId>>::name(a),
 		}
 	}
 
-	fn symbol(asset: &Self::AssetId) -> Vec<u8> {
+	fn symbol(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset.clone()) {
-			Left(a) => <Left as fungibles::metadata::Inspect<AccountId>>::symbol(&a),
-			Right(a) => <Right as fungibles::metadata::Inspect<AccountId>>::symbol(&a),
+			Left(a) => <Left as fungibles::metadata::Inspect<AccountId>>::symbol(a),
+			Right(a) => <Right as fungibles::metadata::Inspect<AccountId>>::symbol(a),
 		}
 	}
 
-	fn decimals(asset: &Self::AssetId) -> u8 {
+	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset.clone()) {
-			Left(a) => <Left as fungibles::metadata::Inspect<AccountId>>::decimals(&a),
-			Right(a) => <Right as fungibles::metadata::Inspect<AccountId>>::decimals(&a),
+			Left(a) => <Left as fungibles::metadata::Inspect<AccountId>>::decimals(a),
+			Right(a) => <Right as fungibles::metadata::Inspect<AccountId>>::decimals(a),
 		}
 	}
 }

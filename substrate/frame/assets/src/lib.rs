@@ -17,7 +17,15 @@
 
 //! # Assets Pallet
 //!
-//! A simple, secure module for dealing with fungible assets.
+//! A simple, secure module for dealing with sets of assets implementing
+//! [`fungible`](frame_support::traits::fungible) traits, via [`fungibles`] traits.
+//!
+//! The pallet makes heavy use of concepts such as Holds and Freezes from the
+//! [`frame_support::traits::fungible`] traits, therefore you should read and understand those docs
+//! as a prerequisite to understanding this pallet.
+//!
+//! See the [`frame_tokens`] reference docs for more information about the place of the
+//! Assets pallet in FRAME.
 //!
 //! ## Overview
 //!
@@ -133,6 +141,8 @@
 //!
 //! * [`System`](../frame_system/index.html)
 //! * [`Support`](../frame_support/index.html)
+//!
+//! [`frame_tokens`]: ../polkadot_sdk_docs/reference_docs/frame_tokens/index.html
 
 // This recursion limit is needed because we have too many benchmarks and benchmarking will fail if
 // we add more without this limit.
@@ -141,7 +151,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
+pub mod benchmarking;
 pub mod migration;
 #[cfg(test)]
 pub mod mock;
@@ -152,27 +162,13 @@ pub mod weights;
 mod extra_mutator;
 pub use extra_mutator::*;
 mod functions;
-
 mod impl_fungibles;
 mod impl_stored_map;
 mod impl_system_token;
-
-pub mod types;
+mod types;
 pub use types::*;
 
-use frame_support::{
-	pallet_prelude::*,
-	storage::KeyPrefixIterator,
-	traits::{
-		tokens::{fungibles, DepositConsequence, WithdrawConsequence},
-		AccountTouch,
-		BalanceStatus::Reserved,
-		ContainsPair, Currency, EnsureOriginWithArg, ReservableCurrency, StoredMap,
-	},
-};
-use frame_system::pallet_prelude::*;
 use scale_info::TypeInfo;
-use softfloat::F64;
 use sp_runtime::{
 	infra::token::*,
 	traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
@@ -180,13 +176,27 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 
+use core::marker::PhantomData;
+use frame_support::{
+	dispatch::DispatchResult,
+	ensure,
+	pallet_prelude::DispatchResultWithPostInfo,
+	storage::KeyPrefixIterator,
+	traits::{
+		tokens::{fungibles, DepositConsequence, WithdrawConsequence, Balance},
+		BalanceStatus::Reserved,
+		Currency, EnsureOriginWithArg, Incrementable, ReservableCurrency, StoredMap,
+	},
+};
 use frame_system::Config as SystemConfig;
+
 pub use pallet::*;
 pub use weights::WeightInfo;
 
 type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+const LOG_TARGET: &str = "runtime::assets";
 
-/// Trait with callbacks that are executed after successfull asset creation or destruction.
+/// Trait with callbacks that are executed after successful asset creation or destruction.
 pub trait AssetsCallback<AssetId, AccountId> {
 	/// Indicates that asset with `id` was successfully created by the `owner`
 	fn created(_id: &AssetId, _owner: &AccountId) -> Result<(), ()> {
@@ -199,16 +209,48 @@ pub trait AssetsCallback<AssetId, AccountId> {
 	}
 }
 
-/// Empty implementation in case no callbacks are required.
-impl<AssetId, AccountId> AssetsCallback<AssetId, AccountId> for () {}
+#[impl_trait_for_tuples::impl_for_tuples(10)]
+impl<AssetId, AccountId> AssetsCallback<AssetId, AccountId> for Tuple {
+	fn created(id: &AssetId, owner: &AccountId) -> Result<(), ()> {
+		for_tuples!( #( Tuple::created(id, owner)?; )* );
+		Ok(())
+	}
+
+	fn destroyed(id: &AssetId) -> Result<(), ()> {
+		for_tuples!( #( Tuple::destroyed(id)?; )* );
+		Ok(())
+	}
+}
+
+/// Auto-increment the [`NextAssetId`] when an asset is created.
+///
+/// This has not effect if the [`NextAssetId`] value is not present.
+pub struct AutoIncAssetId<T, I = ()>(PhantomData<(T, I)>);
+impl<T: Config<I>, I> AssetsCallback<T::AssetId, T::AccountId> for AutoIncAssetId<T, I>
+where
+	T::AssetId: Incrementable,
+{
+	fn created(_: &T::AssetId, _: &T::AccountId) -> Result<(), ()> {
+		let Some(next_id) = NextAssetId::<T, I>::get() else {
+			// Auto increment for the asset id is not enabled.
+			return Ok(());
+		};
+		let next_id = next_id.increment().ok_or(())?;
+		NextAssetId::<T, I>::put(next_id);
+		Ok(())
+	}
+}
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::traits::tokens::Balance;
-
 	use super::*;
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{AccountTouch, ContainsPair},
+	};
+	use frame_system::pallet_prelude::*;
 
-	/// The current storage version.
+	/// The in-code storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::pallet]
@@ -226,10 +268,43 @@ pub mod pallet {
 		}
 	}
 
-	#[pallet::config]
+	/// Default implementations of [`DefaultConfig`], which can be used to implement [`Config`].
+	pub mod config_preludes {
+		use super::*;
+		use frame_support::{derive_impl, traits::ConstU64};
+		pub struct TestDefaultConfig;
+
+		#[derive_impl(frame_system::config_preludes::TestDefaultConfig, no_aggregated_types)]
+		impl frame_system::DefaultConfig for TestDefaultConfig {}
+
+		#[frame_support::register_default_impl(TestDefaultConfig)]
+		impl DefaultConfig for TestDefaultConfig {
+			#[inject_runtime_type]
+			type RuntimeEvent = ();
+			type Balance = u64;
+			type SystemTokenWeight = u128;
+			type RemoveItemsLimit = ConstU32<5>;
+			type AssetId = u32;
+			type AssetIdParameter = u32;
+			type AssetDeposit = ConstU64<1>;
+			type AssetAccountDeposit = ConstU64<10>;
+			type MetadataDepositBase = ConstU64<1>;
+			type MetadataDepositPerByte = ConstU64<1>;
+			type ApprovalDeposit = ConstU64<1>;
+			type StringLimit = ConstU32<50>;
+			type Extra = ();
+			type CallbackHandle = ();
+			type WeightInfo = ();
+			#[cfg(feature = "runtime-benchmarks")]
+			type BenchmarkHelper = ();
+		}
+	}
+
+	#[pallet::config(with_default)]
 	/// The module configuration trait.
 	pub trait Config<I: 'static = ()>: frame_system::Config {
 		/// The overarching event type.
+		#[pallet::no_default_bounds]
 		type RuntimeEvent: From<Event<Self, I>>
 			+ IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -244,7 +319,7 @@ pub mod pallet {
 			+ TypeInfo;
 
 		/// The units in which we record weight of System Token
-		type SystemTokenWeight: Balance + From<F64> + TryInto<i128>;
+		type SystemTokenWeight: Balance;
 
 		/// Max number of items to destroy per `destroy_accounts` and `destroy_approvals` call.
 		///
@@ -265,57 +340,72 @@ pub mod pallet {
 		type AssetIdParameter: Parameter + From<Self::AssetId> + Into<Self::AssetId> + MaxEncodedLen;
 
 		/// The currency mechanism.
+		#[pallet::no_default]
 		type Currency: ReservableCurrency<Self::AccountId>;
 
 		/// Standard asset class creation is only allowed if the origin attempting it and the
 		/// asset class are in this set.
+		#[pallet::no_default]
 		type CreateOrigin: EnsureOriginWithArg<
-			<Self as frame_system::Config>::RuntimeOrigin,
+			Self::RuntimeOrigin,
 			Self::AssetId,
 			Success = Self::AccountId,
 		>;
 
 		/// The origin which may forcibly create or destroy an asset or otherwise alter privileged
 		/// attributes.
-		type ForceOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
+		#[pallet::no_default]
+		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		/// The basic amount of funds that must be reserved for an asset.
 		#[pallet::constant]
+		#[pallet::no_default_bounds]
 		type AssetDeposit: Get<DepositBalanceOf<Self, I>>;
 
 		/// The amount of funds that must be reserved for a non-provider asset account to be
 		/// maintained.
 		#[pallet::constant]
+		#[pallet::no_default_bounds]
 		type AssetAccountDeposit: Get<DepositBalanceOf<Self, I>>;
 
 		/// The basic amount of funds that must be reserved when adding metadata to your asset.
 		#[pallet::constant]
+		#[pallet::no_default_bounds]
 		type MetadataDepositBase: Get<DepositBalanceOf<Self, I>>;
 
 		/// The additional funds that must be reserved for the number of bytes you store in your
 		/// metadata.
 		#[pallet::constant]
+		#[pallet::no_default_bounds]
 		type MetadataDepositPerByte: Get<DepositBalanceOf<Self, I>>;
 
 		/// The amount of funds that must be reserved when creating a new approval.
 		#[pallet::constant]
+		#[pallet::no_default_bounds]
 		type ApprovalDeposit: Get<DepositBalanceOf<Self, I>>;
+
+		/// The maximum length of a name or symbol stored on-chain.
+		#[pallet::constant]
+		type StringLimit: Get<u32>;
 
 		/// A hook to allow a per-asset, per-account minimum balance to be enforced. This must be
 		/// respected in all permissionless operations.
+		#[pallet::no_default]
 		type Freezer: FrozenBalance<Self::AssetId, Self::AccountId, Self::Balance>;
 
 		/// Additional data to be stored with an account's asset balance.
 		type Extra: Member + Parameter + Default + MaxEncodedLen;
 
 		/// Callback methods for asset state change (e.g. asset created or destroyed)
+		///
+		/// Types implementing the [`AssetsCallback`] can be chained when listed together as a
+		/// tuple.
+		/// The [`AutoIncAssetId`] callback, in conjunction with the [`NextAssetId`], can be
+		/// used to set up auto-incrementing asset IDs for this collection.
 		type CallbackHandle: AssetsCallback<Self::AssetId, Self::AccountId>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
-
-		#[pallet::constant]
-		type StringLimit: Get<u32>;
 
 		/// Helper trait for benchmarks.
 		#[cfg(feature = "runtime-benchmarks")]
@@ -363,8 +453,20 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::AssetId,
 		AssetMetadata<DepositBalanceOf<T, I>, BoundedVec<u8, T::StringLimit>>,
-		OptionQuery,
+		ValueQuery,
 	>;
+
+	/// The asset ID enforced for the next asset creation, if any present. Otherwise, this storage
+	/// item has no effect.
+	///
+	/// This can be useful for setting up constraints for IDs of the new assets. For example, by
+	/// providing an initial [`NextAssetId`] and using the [`crate::AutoIncAssetId`] callback, an
+	/// auto-increment model can be applied to all new asset IDs.
+	///
+	/// The initial next asset ID can be set using the [`GenesisConfig`] or the
+	/// [SetNextAssetId](`migration::next_asset_id::SetNextAssetId`) migration.
+	#[pallet::storage]
+	pub type NextAssetId<T: Config<I>, I: 'static = ()> = StorageValue<_, T::AssetId, OptionQuery>;
 
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
@@ -375,6 +477,13 @@ pub mod pallet {
 		pub metadata: Vec<(T::AssetId, Vec<u8>, Vec<u8>, u8)>,
 		/// Genesis accounts: id, account_id, balance
 		pub accounts: Vec<(T::AssetId, T::AccountId, T::Balance)>,
+		/// Genesis [`NextAssetId`].
+		///
+		/// Refer to the [`NextAssetId`] item for more information.
+		///
+		/// This does not enforce the asset ID for the [assets](`GenesisConfig::assets`) within the
+		/// genesis config. It sets the [`NextAssetId`] after they have been created.
+		pub next_asset_id: Option<T::AssetId>,
 	}
 
 	#[pallet::genesis_build]
@@ -437,6 +546,10 @@ pub mod pallet {
 					},
 				);
 				assert!(result.is_ok());
+			}
+
+			if let Some(next_asset_id) = &self.next_asset_id {
+				NextAssetId::<T, I>::put(next_asset_id);
 			}
 		}
 	}
@@ -524,16 +637,10 @@ pub mod pallet {
 		Touched { asset_id: T::AssetId, who: T::AccountId, depositor: T::AccountId },
 		/// Some account `who` was blocked.
 		Blocked { asset_id: T::AssetId, who: T::AccountId },
-		/// Local asset has promoted to System Token
-		Promoted { asset_id: T::AssetId, system_token_weight: SystemTokenWeight },
-		/// System Token has demoted
-		Demoted { asset_id: T::AssetId },
-		/// The is_sufficient of an asset has been updated by the asset owner.
-		AssetSystemTokenWeightChanged {
-			asset_id: T::AssetId,
-			from: SystemTokenWeight,
-			to: SystemTokenWeight,
-		},
+		/// Some assets were deposited (e.g. for transaction fees).
+		Deposited { asset_id: T::AssetId, who: T::AccountId, amount: T::Balance },
+		/// Some assets were withdrawn from the account (e.g. for transaction fees).
+		Withdrawn { asset_id: T::AssetId, who: T::AccountId, amount: T::Balance },
 	}
 
 	#[pallet::error]
@@ -581,6 +688,8 @@ pub mod pallet {
 		NotFrozen,
 		/// Callback action resulted in error
 		CallbackFailed,
+		/// The asset ID must be equal to the [`NextAssetId`].
+		BadAssetId,
 		/// Weight of System Token is missing
 		WeightMissing,
 		/// Request of system token is invalid
@@ -599,7 +708,7 @@ pub mod pallet {
 		///
 		/// Parameters:
 		/// - `id`: The identifier of the new asset. This must not be currently in use to identify
-		/// an existing asset.
+		/// an existing asset. If [`NextAssetId`] is set, then this must be equal to it.
 		/// - `admin`: The admin of this class of assets. The admin is the initial address of each
 		/// member of the asset class's admin team.
 		/// - `min_balance`: The minimum balance of this new asset that any single account must
@@ -622,6 +731,10 @@ pub mod pallet {
 			ensure!(!Asset::<T, I>::contains_key(&id), Error::<T, I>::InUse);
 			ensure!(!min_balance.is_zero(), Error::<T, I>::MinBalanceZero);
 
+			if let Some(next_id) = NextAssetId::<T, I>::get() {
+				ensure!(id == next_id, Error::<T, I>::BadAssetId);
+			}
+
 			let deposit = T::AssetDeposit::get();
 			T::Currency::reserve(&owner, deposit)?;
 
@@ -639,7 +752,7 @@ pub mod pallet {
 					accounts: 0,
 					sufficients: 0,
 					approvals: 0,
-					status: AssetStatus::InActive,
+					status: AssetStatus::Live,
 					currency_type: None,
 					system_token_weight: None,
 				},
@@ -663,7 +776,7 @@ pub mod pallet {
 		/// Unlike `create`, no funds are reserved.
 		///
 		/// - `id`: The identifier of the new asset. This must not be currently in use to identify
-		/// an existing asset.
+		/// an existing asset. If [`NextAssetId`] is set, then this must be equal to it.
 		/// - `owner`: The owner of this class of assets. The owner has full superuser permissions
 		/// over this asset, but may later change and configure the permissions using
 		/// `transfer_ownership` and `set_team`.
@@ -685,7 +798,7 @@ pub mod pallet {
 			T::ForceOrigin::ensure_origin(origin)?;
 			let owner = T::Lookup::lookup(owner)?;
 			let id: T::AssetId = id.into();
-			Self::do_force_create(id, &owner, is_sufficient, min_balance, None, fiat, None)
+			Self::do_force_create(id, owner, is_sufficient, min_balance, None, fiat, None)
 		}
 
 		/// Start the process of destroying a fungible asset class.
@@ -957,7 +1070,7 @@ pub mod pallet {
 			let d = Asset::<T, I>::get(&id).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(
 				d.status == AssetStatus::Live || d.status == AssetStatus::Frozen,
-				Error::<T, I>::AssetNotLive
+				Error::<T, I>::IncorrectStatus
 			);
 			ensure!(origin == d.freezer, Error::<T, I>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
@@ -994,7 +1107,7 @@ pub mod pallet {
 			let details = Asset::<T, I>::get(&id).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(
 				details.status == AssetStatus::Live || details.status == AssetStatus::Frozen,
-				Error::<T, I>::AssetNotLive
+				Error::<T, I>::IncorrectStatus
 			);
 			ensure!(origin == details.admin, Error::<T, I>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
@@ -1080,16 +1193,16 @@ pub mod pallet {
 			let origin = ensure_signed(origin)?;
 			let owner = T::Lookup::lookup(owner)?;
 			let id: T::AssetId = id.into();
+
 			Asset::<T, I>::try_mutate(id.clone(), |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T, I>::Unknown)?;
-				ensure!(details.status == AssetStatus::Live, Error::<T, I>::LiveAsset);
+				ensure!(details.status == AssetStatus::Live, Error::<T, I>::AssetNotLive);
 				ensure!(origin == details.owner, Error::<T, I>::NoPermission);
 				if details.owner == owner {
 					return Ok(())
 				}
 
-				let metadata_deposit =
-					Metadata::<T, I>::get(&id).map_or(Default::default(), |m| m).deposit;
+				let metadata_deposit = Metadata::<T, I>::get(&id).deposit;
 				let deposit = details.deposit + metadata_deposit;
 
 				// Move the deposit to the new owner.
@@ -1169,9 +1282,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 			let id: T::AssetId = id.into();
-			// TODO:
-			// If currency type is specified, assume it would be System Token for the future.
-			// We should not let users set the metadata for free maybe?
 			Self::do_set_metadata(id, &origin, name, symbol, decimals)
 		}
 
@@ -1617,7 +1727,7 @@ pub mod pallet {
 			let origin = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(who)?;
 			let id: T::AssetId = id.into();
-			Self::do_refund_other(id, &who, &origin)
+			Self::do_refund_other(id, &who, Some(origin))
 		}
 
 		/// Disallow further unprivileged transfers of an asset `id` to and from an account `who`.
@@ -1642,7 +1752,7 @@ pub mod pallet {
 			let d = Asset::<T, I>::get(&id).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(
 				d.status == AssetStatus::Live || d.status == AssetStatus::Frozen,
-				Error::<T, I>::AssetNotLive
+				Error::<T, I>::IncorrectStatus
 			);
 			ensure!(origin == d.freezer, Error::<T, I>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
@@ -1655,43 +1765,6 @@ pub mod pallet {
 
 			Self::deposit_event(Event::<T, I>::Blocked { asset_id: id, who });
 			Ok(())
-		}
-
-		/// Move some assets from one account to another.
-		///
-		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
-		///
-		/// - `id`: The identifier of the asset to have some amount transferred.
-		/// - `source`: The account to be debited.
-		/// - `dest`: The account to be credited.
-		/// - `amount`: The amount by which the `source`'s balance of assets should be reduced and
-		/// `dest`'s balance increased. The amount actually transferred may be slightly greater in
-		/// the case that the transfer would otherwise take the `source` balance above zero but
-		/// below the minimum balance. Must be greater than zero.
-		///
-		/// Emits `Transferred` with the actual amount transferred. If this takes the source balance
-		/// to below the minimum for the asset, then the amount transferred is increased to take it
-		/// to zero.
-		///
-		/// Weight: `O(1)`
-		/// Modes: Pre-existence of `dest`; Post-existence of `source`; Account pre-existence of
-		/// `dest`.
-		#[pallet::call_index(32)]
-		#[pallet::weight(T::WeightInfo::force_transfer())]
-		pub fn force_transfer2(
-			origin: OriginFor<T>,
-			id: T::AssetIdParameter,
-			source: AccountIdLookupOf<T>,
-			dest: AccountIdLookupOf<T>,
-			#[pallet::compact] amount: T::Balance,
-		) -> DispatchResult {
-			T::ForceOrigin::ensure_origin(origin)?;
-			let source = T::Lookup::lookup(source)?;
-			let dest = T::Lookup::lookup(dest)?;
-			let id: T::AssetId = id.into();
-
-			let f = TransferFlags { keep_alive: false, best_effort: false, burn_dust: false };
-			Self::do_transfer(id, &source, &dest, amount, None, f).map(|_| ())
 		}
 	}
 
@@ -1707,7 +1780,9 @@ pub mod pallet {
 
 		fn should_touch(asset: T::AssetId, who: &T::AccountId) -> bool {
 			match Asset::<T, I>::get(&asset) {
+				// refer to the [`Self::new_account`] function for more details.
 				Some(info) if info.is_sufficient => false,
+				Some(_) if frame_system::Pallet::<T>::can_accrue_consumers(who, 2) => false,
 				Some(_) => !Account::<T, I>::contains_key(asset, who),
 				_ => true,
 			}

@@ -16,15 +16,13 @@
 
 //! XCM `Location` datatype.
 
-use super::{traits::Reanchorable, Junction, Junctions, SystemTokenId};
+use super::{traits::{Reanchorable, SystemTokenId}, Junction, Junctions};
 use crate::{v3::MultiLocation as OldLocation, VersionedLocation};
-use core::{
-	convert::{TryFrom, TryInto},
-	result,
-};
-use frame_support::PalletError;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
+use core::result;
 use scale_info::TypeInfo;
+use frame_support::PalletError;
+
 /// A relative path between state-bearing consensus systems.
 ///
 /// A location in a consensus system is defined as an *isolatable state machine* held within global
@@ -620,12 +618,19 @@ impl<Interior: Into<Junctions>> From<AncestorThen<Interior>> for Location {
 	}
 }
 
+impl From<[u8; 32]> for Location {
+	fn from(bytes: [u8; 32]) -> Self {
+		let junction: Junction = bytes.into();
+		junction.into()
+	}
+}
+
 xcm_procedural::impl_conversion_functions_for_location_v4!();
 
 #[cfg(test)]
 mod tests {
 	use crate::v4::prelude::*;
-	use parity_scale_codec::{Decode, Encode};
+	use codec::{Decode, Encode};
 
 	#[test]
 	fn conversion_works() {
@@ -806,7 +811,6 @@ mod tests {
 	#[test]
 	fn conversion_from_other_types_works() {
 		use crate::v3;
-		use core::convert::TryInto;
 
 		fn takes_location<Arg: Into<Location>>(_arg: Arg) {}
 

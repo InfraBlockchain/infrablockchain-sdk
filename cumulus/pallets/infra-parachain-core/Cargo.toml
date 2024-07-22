@@ -6,30 +6,30 @@ edition.workspace = true
 description = "Adds functionality to handle Cumulus-based chain policy which is governed by Relay-chain"
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-scale-info = { version = "2.9.0", default-features = false, features = ["derive"] }
-log = { version = "0.4.20", default-features = false }
+codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+log = { workspace = true }
 
 # Primitives
-sp-runtime = { path = "../../../substrate/primitives/runtime", default-features = false}
-sp-std = { path = "../../../substrate/primitives/std", default-features = false}
-sp-core = { path = "../../../substrate/primitives/core", default-features = false}
-softfloat = { path = "../../../substrate/primitives/softfloat", default-features = false }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+sp-core = { workspace = true }
+softfloat = { workspace = true }
 
 # FRAME 
-frame-support = { path = "../../../substrate/frame/support", default-features = false}
-frame-system = { path = "../../../substrate/frame/system", default-features = false}
-pallet-assets = { path = "../../../substrate/frame/assets", default-features = false}
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+pallet-assets = { workspace = true }
 
 
 # InfraBlockchain
-polkadot-primitives = { path = "../../../polkadot/primitives", default-features = false}
-xcm = { package = "staging-xcm", path = "../../../polkadot/xcm", default-features = false}
+polkadot-primitives = { workspace = true }
+xcm = { workspace = true }
 
 # Cumulus
-cumulus-primitives-core = { path = "../../primitives/core", default-features = false }
-cumulus-pallet-parachain-system = { path = "../parachain-system", default-features = false}
-cumulus-pallet-xcm = { path = "../xcm", default-features = false }
+cumulus-primitives-core = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-xcm = { workspace = true }
 
 [features]
 default = [ "std" ]

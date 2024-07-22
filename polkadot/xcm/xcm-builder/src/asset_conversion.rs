@@ -46,7 +46,7 @@ impl<
 				.enumerate()
 				.any(|(index, junction)| latest_id.interior().at(index) != Some(junction))
 		{
-			return None;
+			return None
 		}
 		match latest_id.interior().at(latest_prefix.interior().len()) {
 			Some(Junction::GeneralIndex(id)) => ConvertAssetId::convert(&id),
@@ -106,28 +106,6 @@ impl<
 
 #[deprecated = "Use `ConvertedConcreteId` instead"]
 pub type ConvertedConcreteAssetId<A, B, C, O> = ConvertedConcreteId<A, B, C, O>;
-
-pub struct V4V3LocationConverter;
-impl MaybeEquivalence<xcm::v4::Location, xcm::v3::Location> for V4V3LocationConverter {
-	fn convert(old: &xcm::v4::Location) -> Option<xcm::v3::Location> {
-		(*old).clone().try_into().ok()
-	}
-
-	fn convert_back(new: &xcm::v3::Location) -> Option<xcm::v4::Location> {
-		(*new).try_into().ok()
-	}
-}
-
-pub struct V4V4LocationConverter;
-impl MaybeEquivalence<xcm::v4::Location, xcm::v4::Location> for V4V4LocationConverter {
-	fn convert(old: &xcm::v4::Location) -> Option<xcm::v4::Location> {
-		(*old).clone().try_into().ok()
-	}
-
-	fn convert_back(new: &xcm::v4::Location) -> Option<xcm::v4::Location> {
-		(*new).clone().try_into().ok()
-	}
-}
 
 pub struct MatchedConvertedConcreteId<AssetId, Balance, MatchAssetId, ConvertAssetId, ConvertOther>(
 	PhantomData<(AssetId, Balance, MatchAssetId, ConvertAssetId, ConvertOther)>,

@@ -13,31 +13,30 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-smallvec = "1.11.0"
+smallvec = { workspace = true, default-features = true }
 
 # Substrate
-frame-support = { path = "../../../../substrate/frame/support", default-features = false }
-sp-runtime = { path = "../../../../substrate/primitives/runtime", default-features = false }
+frame-support = { workspace = true }
+sp-runtime = { workspace = true }
 
 # Polkadot
-polkadot-core-primitives = { path = "../../../../polkadot/core-primitives", default-features = false }
-infra-relay-runtime-constants = { path = "../../../../polkadot/runtime/infra-relay/constants", default-features = false, optional = true }
-xcm = { package = "staging-xcm", path = "../../../../polkadot/xcm", default-features = false }
+polkadot-core-primitives = { workspace = true }
+yosemite-runtime-constants = { optional = true, workspace = true }
+xcm = { workspace = true }
 
 # Cumulus
-cumulus-primitives-core = { path = "../../../primitives/core", default-features = false }
+cumulus-primitives-core = { workspace = true }
 
 [features]
 default = ["std"]
 std = [
-    "cumulus-primitives-core/std",
-    "frame-support/std",
-    "polkadot-core-primitives/std",
-    "infra-relay-runtime-constants?/std",
-    "sp-runtime/std",
-    "xcm/std",
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"polkadot-core-primitives/std",
+	"yosemite-runtime-constants?/std",
+	"sp-runtime/std",
+	"xcm/std",
 ]
 
 # Test runtimes specific features.
-# TODO: Change to something related to Testnet
-infra-relay = ["infra-relay-runtime-constants"]
+yosemite = ["yosemite-runtime-constants"]

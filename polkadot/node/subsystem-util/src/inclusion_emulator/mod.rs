@@ -39,8 +39,8 @@
 ///
 /// # Usage
 ///
-/// It's expected that the users of this module will be building up trees of
-/// [`Fragment`]s and consistently pruning and adding to the tree.
+/// It's expected that the users of this module will be building up chains of
+/// [`Fragment`]s and consistently pruning and adding to the chains.
 ///
 /// ## Operating Constraints
 ///
@@ -54,60 +54,65 @@
 /// make an intelligent prediction about what might be accepted in the future based on
 /// prior fragments that also exist off-chain.
 ///
-/// ## Fragment Trees
+/// ## Fragment Chains
+///
+/// For simplicity and practicality, we expect that collators of the same parachain are
+/// cooperating and don't create parachain forks or cycles on the same relay chain active leaf.
+/// Therefore, higher-level code should maintain one fragment chain for each active leaf (not a
+/// fragment tree). If parachains do create forks, their performance in regards to async
+/// backing and elastic scaling will suffer, because different validators will have different
+/// predictions of the future.
 ///
 /// As the relay-chain grows, some predictions come true and others come false.
 /// And new predictions get made. These three changes correspond distinctly to the
-/// 3 primary operations on fragment trees.
+/// 3 primary operations on fragment chains.
 ///
-/// A fragment tree is a mental model for thinking about a forking series of predictions
-/// about a single parachain. There may be one or more fragment trees per parachain.
+/// Avoiding fragment-chain blowup is beyond the scope of this module. Higher-level must ensure
+/// proper spam protection.
 ///
-/// In expectation, most parachains will have a plausibly-unique authorship method which means
-/// that they should really be much closer to fragment-chains, maybe with an occasional fork.
-///
-/// Avoiding fragment-tree blowup is beyond the scope of this module.
-///
-/// ### Pruning Fragment Trees
+/// ### Pruning Fragment Chains
 ///
 /// When the relay-chain advances, we want to compare the new constraints of that relay-parent
-/// to the roots of the fragment trees we have. There are 3 cases:
+/// to the root of the fragment chain we have. There are 3 cases:
 ///
 /// 1. The root fragment is still valid under the new constraints. In this case, we do nothing.
-///    This is the "prediction still uncertain" case.
+///    This is the "prediction still uncertain" case. (Corresponds to some candidates still
+///    being pending availability).
 ///
-/// 2. The root fragment is invalid under the new constraints because it has been subsumed by
-///    the relay-chain. In this case, we can discard the root and split & re-root the fragment
-///    tree under its descendants and compare to the new constraints again. This is the
-///    "prediction came true" case.
+/// 2. The root fragment (potentially along with a number of descendants) is invalid under the
+///    new constraints because it has been included by the relay-chain. In this case, we can
+///    discard the included chain and split & re-root the chain under its descendants and
+///    compare to the new constraints again. This is the "prediction came true" case.
 ///
-/// 3. The root fragment is invalid under the new constraints because a competing parachain
-///    block has been included or it would never be accepted for some other reason. In this
-///    case we can discard the entire fragment tree. This is the "prediction came false" case.
+/// 3. The root fragment becomes invalid under the new constraints for any reason (if for
+///    example the parachain produced a fork and the block producer picked a different
+///    candidate to back). In this case we can discard the entire fragment chain. This is the
+///    "prediction came false" case.
 ///
 /// This is all a bit of a simplification because it assumes that the relay-chain advances
-/// without forks and is finalized instantly. In practice, the set of fragment-trees needs to
+/// without forks and is finalized instantly. In practice, the set of fragment-chains needs to
 /// be observable from the perspective of a few different possible forks of the relay-chain and
 /// not pruned too eagerly.
 ///
 /// Note that the fragments themselves don't need to change and the only thing we care about
 /// is whether the predictions they represent are still valid.
 ///
-/// ### Extending Fragment Trees
+/// ### Extending Fragment Chains
 ///
 /// As predictions fade into the past, new ones should be stacked on top.
 ///
 /// Every new relay-chain block is an opportunity to make a new prediction about the future.
-/// Higher-level logic should select the leaves of the fragment-trees to build upon or whether
-/// to create a new fragment-tree.
+/// Higher-level logic should decide whether to build upon an existing chain or whether
+/// to create a new fragment-chain.
 ///
 /// ### Code Upgrades
 ///
 /// Code upgrades are the main place where this emulation fails. The on-chain PVF upgrade
 /// scheduling logic is very path-dependent and intricate so we just assume that code upgrades
-/// can't be initiated and applied within a single fragment-tree. Fragment-trees aren't deep,
-/// in practice and code upgrades are fairly rare. So what's likely to happen around code
-/// upgrades is that the entire fragment-tree has to get discarded at some point.
+/// can't be initiated and applied within a single fragment-chain. Fragment-chains aren't deep,
+/// in practice (bounded by a linear function of the the number of cores assigned to a
+/// parachain) and code upgrades are fairly rare. So what's likely to happen around code
+/// upgrades is that the entire fragment-chain has to get discarded at some point.
 ///
 /// That means a few blocks of execution time lost, which is not a big deal for code upgrades
 /// in practice at most once every few weeks.
@@ -116,10 +121,7 @@ use polkadot_primitives::{
 	CollatorId, CollatorSignature, Hash, HeadData, Id as ParaId, PersistedValidationData,
 	UpgradeRestriction, ValidationCodeHash,
 };
-use std::{
-	borrow::{Borrow, Cow},
-	collections::HashMap,
-};
+use std::{collections::HashMap, sync::Arc};
 
 /// Constraints on inbound HRMP channels.
 #[derive(Debug, Clone, PartialEq)]
@@ -267,7 +269,7 @@ impl Constraints {
 		if let Some(HrmpWatermarkUpdate::Trunk(hrmp_watermark)) = modifications.hrmp_watermark {
 			// head updates are always valid.
 			if self.hrmp_inbound.valid_watermarks.iter().all(|w| w != &hrmp_watermark) {
-				return Err(ModificationError::DisallowedHrmpWatermark(hrmp_watermark));
+				return Err(ModificationError::DisallowedHrmpWatermark(hrmp_watermark))
 			}
 		}
 
@@ -290,7 +292,7 @@ impl Constraints {
 						messages_submitted: outbound_hrmp_mod.messages_submitted,
 					})?;
 			} else {
-				return Err(ModificationError::NoSuchHrmpChannel(*id));
+				return Err(ModificationError::NoSuchHrmpChannel(*id))
 			}
 		}
 
@@ -317,7 +319,7 @@ impl Constraints {
 			})?;
 
 		if self.future_validation_code.is_none() && modifications.code_upgrade_applied {
-			return Err(ModificationError::AppliedNonexistentCodeUpgrade);
+			return Err(ModificationError::AppliedNonexistentCodeUpgrade)
 		}
 
 		Ok(())
@@ -348,7 +350,7 @@ impl Constraints {
 					},
 					HrmpWatermarkUpdate::Trunk(n) => {
 						// Trunk update landing on disallowed watermark is not OK.
-						return Err(ModificationError::DisallowedHrmpWatermark(*n));
+						return Err(ModificationError::DisallowedHrmpWatermark(*n))
 					},
 				},
 			}
@@ -374,7 +376,7 @@ impl Constraints {
 						messages_submitted: outbound_hrmp_mod.messages_submitted,
 					})?;
 			} else {
-				return Err(ModificationError::NoSuchHrmpChannel(*id));
+				return Err(ModificationError::NoSuchHrmpChannel(*id))
 			}
 		}
 
@@ -397,7 +399,7 @@ impl Constraints {
 			return Err(ModificationError::DmpMessagesUnderflow {
 				messages_remaining: new.dmp_remaining_messages.len(),
 				messages_processed: modifications.dmp_messages_processed,
-			});
+			})
 		} else {
 			new.dmp_remaining_messages =
 				new.dmp_remaining_messages[modifications.dmp_messages_processed..].to_vec();
@@ -524,9 +526,9 @@ impl ConstraintModifications {
 /// here. But the erasure-root is not. This means that prospective candidates
 /// are not correlated to any session in particular.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ProspectiveCandidate<'a> {
+pub struct ProspectiveCandidate {
 	/// The commitments to the output of the execution.
-	pub commitments: Cow<'a, CandidateCommitments>,
+	pub commitments: CandidateCommitments,
 	/// The collator that created the candidate.
 	pub collator: CollatorId,
 	/// The signature of the collator on the payload.
@@ -537,32 +539,6 @@ pub struct ProspectiveCandidate<'a> {
 	pub pov_hash: Hash,
 	/// The validation code hash used by the candidate.
 	pub validation_code_hash: ValidationCodeHash,
-}
-
-impl<'a> ProspectiveCandidate<'a> {
-	fn into_owned(self) -> ProspectiveCandidate<'static> {
-		ProspectiveCandidate { commitments: Cow::Owned(self.commitments.into_owned()), ..self }
-	}
-
-	/// Partially clone the prospective candidate, but borrow the
-	/// parts which are potentially heavy.
-	pub fn partial_clone(&self) -> ProspectiveCandidate {
-		ProspectiveCandidate {
-			commitments: Cow::Borrowed(self.commitments.borrow()),
-			collator: self.collator.clone(),
-			collator_signature: self.collator_signature.clone(),
-			persisted_validation_data: self.persisted_validation_data.clone(),
-			pov_hash: self.pov_hash,
-			validation_code_hash: self.validation_code_hash,
-		}
-	}
-}
-
-#[cfg(test)]
-impl ProspectiveCandidate<'static> {
-	fn commitments_mut(&mut self) -> &mut CandidateCommitments {
-		self.commitments.to_mut()
-	}
 }
 
 /// Kinds of errors with the validity of a fragment.
@@ -618,19 +594,19 @@ pub enum FragmentValidityError {
 /// This is a type which guarantees that the candidate is valid under the
 /// operating constraints.
 #[derive(Debug, Clone, PartialEq)]
-pub struct Fragment<'a> {
+pub struct Fragment {
 	/// The new relay-parent.
 	relay_parent: RelayChainBlockInfo,
 	/// The constraints this fragment is operating under.
 	operating_constraints: Constraints,
 	/// The core information about the prospective candidate.
-	candidate: ProspectiveCandidate<'a>,
+	candidate: Arc<ProspectiveCandidate>,
 	/// Modifications to the constraints based on the outputs of
 	/// the candidate.
 	modifications: ConstraintModifications,
 }
 
-impl<'a> Fragment<'a> {
+impl Fragment {
 	/// Create a new fragment.
 	///
 	/// This fails if the fragment isn't in line with the operating
@@ -642,10 +618,29 @@ impl<'a> Fragment<'a> {
 	pub fn new(
 		relay_parent: RelayChainBlockInfo,
 		operating_constraints: Constraints,
-		candidate: ProspectiveCandidate<'a>,
+		candidate: Arc<ProspectiveCandidate>,
 	) -> Result<Self, FragmentValidityError> {
+		let modifications = Self::check_against_constraints(
+			&relay_parent,
+			&operating_constraints,
+			&candidate.commitments,
+			&candidate.validation_code_hash,
+			&candidate.persisted_validation_data,
+		)?;
+
+		Ok(Fragment { relay_parent, operating_constraints, candidate, modifications })
+	}
+
+	/// Check the candidate against the operating constrains and return the constraint modifications
+	/// made by this candidate.
+	pub fn check_against_constraints(
+		relay_parent: &RelayChainBlockInfo,
+		operating_constraints: &Constraints,
+		commitments: &CandidateCommitments,
+		validation_code_hash: &ValidationCodeHash,
+		persisted_validation_data: &PersistedValidationData,
+	) -> Result<ConstraintModifications, FragmentValidityError> {
 		let modifications = {
-			let commitments = &candidate.commitments;
 			ConstraintModifications {
 				required_parent: Some(commitments.head_data.clone()),
 				hrmp_watermark: Some({
@@ -664,7 +659,7 @@ impl<'a> Fragment<'a> {
 							if last >= message.recipient {
 								return Err(
 									FragmentValidityError::HrmpMessagesDescendingOrDuplicate(i),
-								);
+								)
 							}
 						}
 
@@ -689,11 +684,13 @@ impl<'a> Fragment<'a> {
 		validate_against_constraints(
 			&operating_constraints,
 			&relay_parent,
-			&candidate,
+			commitments,
+			persisted_validation_data,
+			validation_code_hash,
 			&modifications,
 		)?;
 
-		Ok(Fragment { relay_parent, operating_constraints, candidate, modifications })
+		Ok(modifications)
 	}
 
 	/// Access the relay parent information.
@@ -707,7 +704,7 @@ impl<'a> Fragment<'a> {
 	}
 
 	/// Access the underlying prospective candidate.
-	pub fn candidate(&self) -> &ProspectiveCandidate<'a> {
+	pub fn candidate(&self) -> &ProspectiveCandidate {
 		&self.candidate
 	}
 
@@ -715,31 +712,14 @@ impl<'a> Fragment<'a> {
 	pub fn constraint_modifications(&self) -> &ConstraintModifications {
 		&self.modifications
 	}
-
-	/// Convert the fragment into an owned variant.
-	pub fn into_owned(self) -> Fragment<'static> {
-		Fragment { candidate: self.candidate.into_owned(), ..self }
-	}
-
-	/// Validate this fragment against some set of constraints
-	/// instead of the operating constraints.
-	pub fn validate_against_constraints(
-		&self,
-		constraints: &Constraints,
-	) -> Result<(), FragmentValidityError> {
-		validate_against_constraints(
-			constraints,
-			&self.relay_parent,
-			&self.candidate,
-			&self.modifications,
-		)
-	}
 }
 
 fn validate_against_constraints(
 	constraints: &Constraints,
 	relay_parent: &RelayChainBlockInfo,
-	candidate: &ProspectiveCandidate,
+	commitments: &CandidateCommitments,
+	persisted_validation_data: &PersistedValidationData,
+	validation_code_hash: &ValidationCodeHash,
 	modifications: &ConstraintModifications,
 ) -> Result<(), FragmentValidityError> {
 	let expected_pvd = PersistedValidationData {
@@ -749,28 +729,28 @@ fn validate_against_constraints(
 		max_pov_size: constraints.max_pov_size as u32,
 	};
 
-	if expected_pvd != candidate.persisted_validation_data {
+	if expected_pvd != *persisted_validation_data {
 		return Err(FragmentValidityError::PersistedValidationDataMismatch(
 			expected_pvd,
-			candidate.persisted_validation_data.clone(),
-		));
+			persisted_validation_data.clone(),
+		))
 	}
 
-	if constraints.validation_code_hash != candidate.validation_code_hash {
+	if constraints.validation_code_hash != *validation_code_hash {
 		return Err(FragmentValidityError::ValidationCodeMismatch(
 			constraints.validation_code_hash,
-			candidate.validation_code_hash,
-		));
+			*validation_code_hash,
+		))
 	}
 
 	if relay_parent.number < constraints.min_relay_parent_number {
 		return Err(FragmentValidityError::RelayParentTooOld(
 			constraints.min_relay_parent_number,
 			relay_parent.number,
-		));
+		))
 	}
 
-	if candidate.commitments.new_validation_code.is_some() {
+	if commitments.new_validation_code.is_some() {
 		match constraints.upgrade_restriction {
 			None => {},
 			Some(UpgradeRestriction::Present) =>
@@ -778,17 +758,14 @@ fn validate_against_constraints(
 		}
 	}
 
-	let announced_code_size = candidate
-		.commitments
-		.new_validation_code
-		.as_ref()
-		.map_or(0, |code| code.0.len());
+	let announced_code_size =
+		commitments.new_validation_code.as_ref().map_or(0, |code| code.0.len());
 
 	if announced_code_size > constraints.max_code_size {
 		return Err(FragmentValidityError::CodeSizeTooLarge(
 			constraints.max_code_size,
 			announced_code_size,
-		));
+		))
 	}
 
 	if modifications.dmp_messages_processed == 0 {
@@ -797,22 +774,22 @@ fn validate_against_constraints(
 			.get(0)
 			.map_or(false, |&msg_sent_at| msg_sent_at <= relay_parent.number)
 		{
-			return Err(FragmentValidityError::DmpAdvancementRule);
+			return Err(FragmentValidityError::DmpAdvancementRule)
 		}
 	}
 
-	if candidate.commitments.horizontal_messages.len() > constraints.max_hrmp_num_per_candidate {
+	if commitments.horizontal_messages.len() > constraints.max_hrmp_num_per_candidate {
 		return Err(FragmentValidityError::HrmpMessagesPerCandidateOverflow {
 			messages_allowed: constraints.max_hrmp_num_per_candidate,
-			messages_submitted: candidate.commitments.horizontal_messages.len(),
-		});
+			messages_submitted: commitments.horizontal_messages.len(),
+		})
 	}
 
-	if candidate.commitments.upward_messages.len() > constraints.max_ump_num_per_candidate {
+	if commitments.upward_messages.len() > constraints.max_ump_num_per_candidate {
 		return Err(FragmentValidityError::UmpMessagesPerCandidateOverflow {
 			messages_allowed: constraints.max_ump_num_per_candidate,
-			messages_submitted: candidate.commitments.upward_messages.len(),
-		});
+			messages_submitted: commitments.upward_messages.len(),
+		})
 	}
 
 	constraints
@@ -1184,23 +1161,21 @@ mod tests {
 	fn make_candidate(
 		constraints: &Constraints,
 		relay_parent: &RelayChainBlockInfo,
-	) -> ProspectiveCandidate<'static> {
+	) -> ProspectiveCandidate {
 		let collator_pair = CollatorPair::generate().0;
 		let collator = collator_pair.public();
 
 		let sig = collator_pair.sign(b"blabla".as_slice());
 
 		ProspectiveCandidate {
-			commitments: Cow::Owned(CandidateCommitments {
+			commitments: CandidateCommitments {
 				upward_messages: Default::default(),
 				horizontal_messages: Default::default(),
 				new_validation_code: None,
 				head_data: HeadData::from(vec![1, 2, 3, 4, 5]),
 				processed_downward_messages: 0,
 				hrmp_watermark: relay_parent.number,
-				proof_of_transaction: None,
-				requested_asset: None,
-			}),
+			},
 			collator,
 			collator_signature: sig,
 			persisted_validation_data: PersistedValidationData {
@@ -1231,7 +1206,7 @@ mod tests {
 		candidate.validation_code_hash = got_code;
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::ValidationCodeMismatch(expected_code, got_code,)),
 		)
 	}
@@ -1263,7 +1238,7 @@ mod tests {
 		let got_pvd = candidate.persisted_validation_data.clone();
 
 		assert_eq!(
-			Fragment::new(relay_parent_b, constraints, candidate),
+			Fragment::new(relay_parent_b, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::PersistedValidationDataMismatch(expected_pvd, got_pvd,)),
 		);
 	}
@@ -1280,10 +1255,10 @@ mod tests {
 		let mut candidate = make_candidate(&constraints, &relay_parent);
 
 		let max_code_size = constraints.max_code_size;
-		candidate.commitments_mut().new_validation_code = Some(vec![0; max_code_size + 1].into());
+		candidate.commitments.new_validation_code = Some(vec![0; max_code_size + 1].into());
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::CodeSizeTooLarge(max_code_size, max_code_size + 1,)),
 		);
 	}
@@ -1300,7 +1275,7 @@ mod tests {
 		let candidate = make_candidate(&constraints, &relay_parent);
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::RelayParentTooOld(5, 3,)),
 		);
 	}
@@ -1319,7 +1294,7 @@ mod tests {
 		let max_hrmp = constraints.max_hrmp_num_per_candidate;
 
 		candidate
-			.commitments_mut()
+			.commitments
 			.horizontal_messages
 			.try_extend((0..max_hrmp + 1).map(|i| OutboundHrmpMessage {
 				recipient: ParaId::from(i as u32),
@@ -1328,7 +1303,7 @@ mod tests {
 			.unwrap();
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::HrmpMessagesPerCandidateOverflow {
 				messages_allowed: max_hrmp,
 				messages_submitted: max_hrmp + 1,
@@ -1348,22 +1323,36 @@ mod tests {
 		let mut candidate = make_candidate(&constraints, &relay_parent);
 
 		// Empty dmp queue is ok.
-		assert!(Fragment::new(relay_parent.clone(), constraints.clone(), candidate.clone()).is_ok());
+		assert!(Fragment::new(
+			relay_parent.clone(),
+			constraints.clone(),
+			Arc::new(candidate.clone())
+		)
+		.is_ok());
 		// Unprocessed message that was sent later is ok.
 		constraints.dmp_remaining_messages = vec![relay_parent.number + 1];
-		assert!(Fragment::new(relay_parent.clone(), constraints.clone(), candidate.clone()).is_ok());
+		assert!(Fragment::new(
+			relay_parent.clone(),
+			constraints.clone(),
+			Arc::new(candidate.clone())
+		)
+		.is_ok());
 
 		for block_number in 0..=relay_parent.number {
 			constraints.dmp_remaining_messages = vec![block_number];
 
 			assert_eq!(
-				Fragment::new(relay_parent.clone(), constraints.clone(), candidate.clone()),
+				Fragment::new(
+					relay_parent.clone(),
+					constraints.clone(),
+					Arc::new(candidate.clone())
+				),
 				Err(FragmentValidityError::DmpAdvancementRule),
 			);
 		}
 
-		candidate.commitments.to_mut().processed_downward_messages = 1;
-		assert!(Fragment::new(relay_parent, constraints, candidate).is_ok());
+		candidate.commitments.processed_downward_messages = 1;
+		assert!(Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())).is_ok());
 	}
 
 	#[test]
@@ -1381,13 +1370,12 @@ mod tests {
 
 		candidate
 			.commitments
-			.to_mut()
 			.upward_messages
 			.try_extend((0..max_ump + 1).map(|i| vec![i as u8]))
 			.unwrap();
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::UmpMessagesPerCandidateOverflow {
 				messages_allowed: max_ump,
 				messages_submitted: max_ump + 1,
@@ -1407,10 +1395,10 @@ mod tests {
 		let mut candidate = make_candidate(&constraints, &relay_parent);
 
 		constraints.upgrade_restriction = Some(UpgradeRestriction::Present);
-		candidate.commitments_mut().new_validation_code = Some(ValidationCode(vec![1, 2, 3]));
+		candidate.commitments.new_validation_code = Some(ValidationCode(vec![1, 2, 3]));
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::CodeUpgradeRestricted),
 		);
 	}
@@ -1426,23 +1414,23 @@ mod tests {
 		let constraints = make_constraints();
 		let mut candidate = make_candidate(&constraints, &relay_parent);
 
-		candidate.commitments_mut().horizontal_messages = HorizontalMessages::truncate_from(vec![
+		candidate.commitments.horizontal_messages = HorizontalMessages::truncate_from(vec![
 			OutboundHrmpMessage { recipient: ParaId::from(0 as u32), data: vec![1, 2, 3] },
 			OutboundHrmpMessage { recipient: ParaId::from(0 as u32), data: vec![4, 5, 6] },
 		]);
 
 		assert_eq!(
-			Fragment::new(relay_parent.clone(), constraints.clone(), candidate.clone()),
+			Fragment::new(relay_parent.clone(), constraints.clone(), Arc::new(candidate.clone())),
 			Err(FragmentValidityError::HrmpMessagesDescendingOrDuplicate(1)),
 		);
 
-		candidate.commitments_mut().horizontal_messages = HorizontalMessages::truncate_from(vec![
+		candidate.commitments.horizontal_messages = HorizontalMessages::truncate_from(vec![
 			OutboundHrmpMessage { recipient: ParaId::from(1 as u32), data: vec![1, 2, 3] },
 			OutboundHrmpMessage { recipient: ParaId::from(0 as u32), data: vec![4, 5, 6] },
 		]);
 
 		assert_eq!(
-			Fragment::new(relay_parent, constraints, candidate),
+			Fragment::new(relay_parent, constraints, Arc::new(candidate.clone())),
 			Err(FragmentValidityError::HrmpMessagesDescendingOrDuplicate(1)),
 		);
 	}

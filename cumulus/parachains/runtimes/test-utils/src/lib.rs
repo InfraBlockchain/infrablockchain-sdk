@@ -276,7 +276,7 @@ where
 		loop {
 			let block_number = frame_system::Pallet::<Runtime>::block_number();
 			if block_number >= n.into() {
-				break;
+				break
 			}
 			// Set the new block number and author
 
@@ -305,7 +305,7 @@ where
 		loop {
 			let block_number = frame_system::Pallet::<Runtime>::block_number();
 			if block_number >= n.into() {
-				break;
+				break
 			}
 			// Set the new block number and author
 			let header = frame_system::Pallet::<Runtime>::finalize();
@@ -534,9 +534,9 @@ pub fn assert_metadata<Fungibles, AccountId>(
 	Fungibles: frame_support::traits::fungibles::metadata::Inspect<AccountId>
 		+ frame_support::traits::fungibles::Inspect<AccountId>,
 {
-	assert_eq!(Fungibles::name(&asset_id.clone().into()), Vec::from(expected_name),);
-	assert_eq!(Fungibles::symbol(&asset_id.clone().into()), Vec::from(expected_symbol),);
-	assert_eq!(Fungibles::decimals(&asset_id.into()), expected_decimals);
+	assert_eq!(Fungibles::name(asset_id.clone().into()), Vec::from(expected_name),);
+	assert_eq!(Fungibles::symbol(asset_id.clone().into()), Vec::from(expected_symbol),);
+	assert_eq!(Fungibles::decimals(asset_id.into()), expected_decimals);
 }
 
 pub fn assert_total<Fungibles, AccountId>(

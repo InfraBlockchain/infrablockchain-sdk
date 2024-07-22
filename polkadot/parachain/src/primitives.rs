@@ -20,14 +20,14 @@
 use sp_std::vec::Vec;
 
 use bounded_collections::{BoundedVec, ConstU32};
-use parity_scale_codec::{CompactAs, Decode, Encode, MaxEncodedLen};
+use codec::{CompactAs, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_core::{bytes, RuntimeDebug, TypeId};
 use sp_runtime::traits::Hash as _;
 use sp_weights::Weight;
 
-use polkadot_core_primitives::{Hash, OpaquePoT, OpaqueRemoteAssetMetadata, OutboundHrmpMessage};
+use polkadot_core_primitives::{Hash, OutboundHrmpMessage, OpaquePoT, OpaqueRemoteAssetMetadata};
 
 /// Block number type used by the relay chain.
 pub use polkadot_core_primitives::BlockNumber as RelayChainBlockNumber;
@@ -333,7 +333,19 @@ impl DmpMessageHandler for () {
 }
 
 /// The aggregate XCMP message format.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, TypeInfo, RuntimeDebug)]
+#[derive(
+	Copy,
+	Clone,
+	Eq,
+	PartialEq,
+	Ord,
+	PartialOrd,
+	Encode,
+	Decode,
+	TypeInfo,
+	RuntimeDebug,
+	MaxEncodedLen,
+)]
 pub enum XcmpMessageFormat {
 	/// Encoded `VersionedXcm` messages, all concatenated.
 	ConcatenatedVersionedXcm,

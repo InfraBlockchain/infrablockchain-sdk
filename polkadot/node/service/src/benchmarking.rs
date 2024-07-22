@@ -34,29 +34,32 @@ macro_rules! identify_chain {
 		$generic_code:expr $(,)*
 	) => {
 		match $chain {
-			Chain::InfraRelay => {
-				#[cfg(feature = "infra-relay-native")]
+			Chain::Polkadot => Err("Polkadot runtimes are currently not supported"),
+			Chain::Kusama => Err("Kusama runtimes are currently not supported"),
+			Chain::Yosemite => {
+				#[cfg(feature = "yosemite-native")]
 				{
-					use infra_relay_runtime as runtime;
+					use yosemite_runtime as runtime;
 
 					let call = $generic_code;
 
-					Ok(infra_relay_sign_call(
-						call,
-						$nonce,
-						$current_block,
-						$period,
-						$genesis,
-						$signer,
-					))
+					Ok(yosemite_sign_call(call, $nonce, $current_block, $period, $genesis, $signer))
 				}
 
-				#[cfg(not(feature = "infra-relay-native"))]
+				#[cfg(not(feature = "yosemite-native"))]
 				{
-					Err("`infra-relay-native` feature not enabled")
+					Err("`yosemite-native` feature not enabled")
 				}
 			},
-			_ => Err("Unsupported chains!"),
+			Chain::Unknown => {
+				let _ = $nonce;
+				let _ = $current_block;
+				let _ = $period;
+				let _ = $genesis;
+				let _ = $signer;
+
+				Err("Unknown chain")
+			},
 		}
 	};
 }
@@ -158,9 +161,9 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
 	}
 }
 
-#[cfg(feature = "infra-relay-native")]
-fn infra_relay_sign_call(
-	call: infra_relay_runtime::RuntimeCall,
+#[cfg(feature = "yosemite-native")]
+fn yosemite_sign_call(
+	call: yosemite_runtime::RuntimeCall,
 	nonce: u32,
 	current_block: u64,
 	period: u64,
@@ -168,7 +171,7 @@ fn infra_relay_sign_call(
 	acc: sp_core::sr25519::Pair,
 ) -> OpaqueExtrinsic {
 	use codec::Encode;
-	use infra_relay_runtime as runtime;
+	use yosemite_runtime as runtime;
 	use sp_core::Pair;
 
 	let extra: runtime::SignedExtra = (
