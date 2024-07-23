@@ -29,19 +29,13 @@ jsonrpsee = { features = ["server"], workspace = true }
 # Local runtimes
 rococo-parachain-runtime = { workspace = true, optional = true }
 shell-runtime = { workspace = true, optional = true }
-glutton-westend-runtime = { workspace = true, optional = true }
 seedling-runtime = { workspace = true, optional = true }
-asset-hub-rococo-runtime = { workspace = true, default-features = true, optional = true }
-asset-hub-westend-runtime = { workspace = true, optional = true }
-collectives-westend-runtime = { workspace = true, optional = true }
+asset-hub-yosemite-runtime = { workspace = true, default-features = true, optional = true }
 contracts-rococo-runtime = { workspace = true, optional = true }
 bridge-hub-rococo-runtime = { workspace = true, default-features = true, optional = true }
 coretime-rococo-runtime = { workspace = true, optional = true }
-coretime-westend-runtime = { workspace = true, optional = true }
-bridge-hub-westend-runtime = { workspace = true, default-features = true, optional = true }
 penpal-runtime = { workspace = true, optional = true }
 people-rococo-runtime = { workspace = true, optional = true }
-people-westend-runtime = { workspace = true, optional = true }
 
 parachains-common = { workspace = true, default-features = true }
 testnet-parachains-constants = { features = ["yosemite"], workspace = true }
@@ -136,18 +130,12 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"parachains-common/runtime-benchmarks",
-	"asset-hub-rococo-runtime?/runtime-benchmarks",
-	"asset-hub-westend-runtime?/runtime-benchmarks",
+	"asset-hub-yosemite-runtime?/runtime-benchmarks",
 	"bridge-hub-rococo-runtime?/runtime-benchmarks",
-	"bridge-hub-westend-runtime?/runtime-benchmarks",
-	"collectives-westend-runtime?/runtime-benchmarks",
 	"contracts-rococo-runtime?/runtime-benchmarks",
 	"coretime-rococo-runtime?/runtime-benchmarks",
-	"coretime-westend-runtime?/runtime-benchmarks",
-	"glutton-westend-runtime?/runtime-benchmarks",
 	"penpal-runtime?/runtime-benchmarks",
 	"people-rococo-runtime?/runtime-benchmarks",
-	"people-westend-runtime?/runtime-benchmarks",
 	"rococo-parachain-runtime?/runtime-benchmarks",
 ]
 try-runtime = [
@@ -157,39 +145,26 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 	"polkadot-cli/try-runtime",
 	"polkadot-service/try-runtime",
-	"asset-hub-rococo-runtime?/try-runtime",
-	"asset-hub-westend-runtime?/try-runtime",
+	"asset-hub-yosemite-runtime?/try-runtime",
 	"bridge-hub-rococo-runtime?/try-runtime",
-	"bridge-hub-westend-runtime?/try-runtime",
-	"collectives-westend-runtime?/try-runtime",
 	"contracts-rococo-runtime?/try-runtime",
 	"coretime-rococo-runtime?/try-runtime",
-	"coretime-westend-runtime?/try-runtime",
-	"glutton-westend-runtime?/try-runtime",
 	"penpal-runtime?/try-runtime",
 	"people-rococo-runtime?/try-runtime",
-	"people-westend-runtime?/try-runtime",
 	"shell-runtime/try-runtime",
 ]
 fast-runtime = [
 	"bridge-hub-rococo-runtime?/fast-runtime",
 	"coretime-rococo-runtime?/fast-runtime",
-	"coretime-westend-runtime?/fast-runtime",
 ]
 infra-parachain = [
-	"asset-hub-rococo-runtime"
+	"asset-hub-yosemite-runtime"
 ]
 polkadot-parachain = [
-	"asset-hub-westend-runtime",
 	"bridge-hub-rococo-runtime",
-	"bridge-hub-westend-runtime",
-	"collectives-westend-runtime",
 	"contracts-rococo-runtime",
 	"coretime-rococo-runtime",
-	"coretime-westend-runtime",
-	"glutton-westend-runtime",
 	"penpal-runtime",
 	"people-rococo-runtime",
-	"people-westend-runtime",
 	"rococo-parachain-runtime",
 ]

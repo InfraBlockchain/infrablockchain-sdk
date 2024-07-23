@@ -477,7 +477,7 @@ fn build_contracts_rpc_extensions(
 }
 
 /// Start a polkadot-shell parachain node.
-pub async fn start_shell_node<Net: NetworkBackend<Block, Hash>>(
+pub async fn _start_shell_node<Net: NetworkBackend<Block, Hash>>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,
@@ -585,7 +585,7 @@ where
 /// Uses the lookahead collator to support async backing.
 ///
 /// Start an aura powered parachain node. Some system chains use this.
-pub async fn start_generic_aura_lookahead_node<Net: NetworkBackend<Block, Hash>>(
+pub async fn _start_generic_aura_lookahead_node<Net: NetworkBackend<Block, Hash>>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,
@@ -882,7 +882,7 @@ where
 /// Start an aura powered parachain node which uses the lookahead collator to support async backing.
 /// This node is basic in the sense that its runtime api doesn't include common contents such as
 /// transaction payment. Used for aura glutton.
-pub async fn start_basic_lookahead_node<Net: NetworkBackend<Block, Hash>>(
+pub async fn _start_basic_lookahead_node<Net: NetworkBackend<Block, Hash>>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,
@@ -904,7 +904,7 @@ pub async fn start_basic_lookahead_node<Net: NetworkBackend<Block, Hash>>(
 }
 
 /// Start a parachain node for Rococo Contracts.
-pub async fn start_contracts_rococo_node<Net: NetworkBackend<Block, Hash>>(
+pub async fn _start_contracts_rococo_node<Net: NetworkBackend<Block, Hash>>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,

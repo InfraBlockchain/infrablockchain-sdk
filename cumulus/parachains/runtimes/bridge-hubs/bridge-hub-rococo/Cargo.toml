@@ -86,10 +86,8 @@ testnet-parachains-constants = { features = ["yosemite"], workspace = true }
 
 # Bridges
 bp-asset-hub-rococo = { workspace = true }
-bp-asset-hub-westend = { workspace = true }
 bp-bridge-hub-polkadot = { workspace = true }
 bp-bridge-hub-rococo = { workspace = true }
-bp-bridge-hub-westend = { workspace = true }
 bp-header-chain = { workspace = true }
 bp-messages = { workspace = true }
 bp-parachains = { workspace = true }
@@ -98,7 +96,6 @@ bp-polkadot-core = { workspace = true }
 bp-relayers = { workspace = true }
 bp-runtime = { workspace = true }
 bp-rococo = { workspace = true }
-bp-westend = { workspace = true }
 pallet-bridge-grandpa = { workspace = true }
 pallet-bridge-messages = { workspace = true }
 pallet-bridge-parachains = { workspace = true }
@@ -133,10 +130,8 @@ snowbridge-runtime-test-common = { workspace = true, default-features = true }
 default = ["std"]
 std = [
 	"bp-asset-hub-rococo/std",
-	"bp-asset-hub-westend/std",
 	"bp-bridge-hub-polkadot/std",
 	"bp-bridge-hub-rococo/std",
-	"bp-bridge-hub-westend/std",
 	"bp-header-chain/std",
 	"bp-messages/std",
 	"bp-parachains/std",
@@ -145,7 +140,6 @@ std = [
 	"bp-relayers/std",
 	"bp-rococo/std",
 	"bp-runtime/std",
-	"bp-westend/std",
 	"bridge-hub-common/std",
 	"bridge-runtime-common/std",
 	"codec/std",

@@ -1,9 +1,9 @@
 [package]
-name = "asset-hub-westend-runtime"
-version = "0.15.0"
+name = "asset-hub-yosemite-runtime"
+version = "0.11.0"
 authors.workspace = true
 edition.workspace = true
-description = "Westend variant of Asset Hub parachain runtime"
+description = "Yosemite variant of Asset Hub parachain runtime"
 license = "Apache-2.0"
 
 [lints]
@@ -15,6 +15,12 @@ hex-literal = { workspace = true, default-features = true }
 log = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
+# Infra
+pallet-system-token-conversion = { workspace = true }
+pallet-system-token-tx-payment = { workspace = true }
+infra-asset-common = { workspace = true }
+pallet-system-token-oracle = { workspace = true }
+
 # Substrate
 frame-benchmarking = { optional = true, workspace = true }
 frame-executive = { workspace = true }
@@ -24,32 +30,34 @@ frame-system = { workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { optional = true, workspace = true }
-pallet-asset-conversion-ops = { workspace = true }
 pallet-asset-conversion-tx-payment = { workspace = true }
 pallet-assets = { workspace = true }
+pallet-asset-conversion-ops = { workspace = true }
 pallet-asset-conversion = { workspace = true }
 pallet-assets-freezer = { workspace = true }
 pallet-aura = { workspace = true }
 pallet-authorship = { workspace = true }
 pallet-balances = { workspace = true }
+pallet-message-queue = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-nft-fractionalization = { workspace = true }
 pallet-nfts = { workspace = true }
 pallet-nfts-runtime-api = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-session = { workspace = true }
-pallet-state-trie-migration = { workspace = true }
+pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-uniques = { workspace = true }
 pallet-utility = { workspace = true }
 sp-api = { workspace = true }
+sp-arithmetic = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
-sp-genesis-builder = { workspace = true }
 sp-inherents = { workspace = true }
+sp-genesis-builder = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
@@ -57,23 +65,24 @@ sp-std = { workspace = true }
 sp-storage = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-version = { workspace = true }
+sp-weights = { workspace = true }
 # num-traits feature needed for dex integer sq root:
 primitive-types = { features = ["codec", "num-traits", "scale-info"], workspace = true }
 
 # Polkadot
+yosemite-runtime-constants = { workspace = true }
 pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { optional = true, workspace = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-runtime-common = { workspace = true }
-westend-runtime-constants = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
 # Cumulus
+cumulus-pallet-infra-parachain-core = { workspace = true }
 cumulus-pallet-aura-ext = { workspace = true }
-pallet-message-queue = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-xcm = { workspace = true }
@@ -91,9 +100,8 @@ assets-common = { workspace = true }
 # Bridges
 pallet-xcm-bridge-hub-router = { workspace = true }
 bp-asset-hub-rococo = { workspace = true }
-bp-asset-hub-westend = { workspace = true }
 bp-bridge-hub-rococo = { workspace = true }
-bp-bridge-hub-westend = { workspace = true }
+snowbridge-router-primitives = { workspace = true }
 
 [dev-dependencies]
 asset-test-utils = { workspace = true, default-features = true }
@@ -125,7 +133,6 @@ runtime-benchmarks = [
 	"pallet-nft-fractionalization/runtime-benchmarks",
 	"pallet-nfts/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
-	"pallet-state-trie-migration/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-uniques/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
@@ -135,6 +142,7 @@ runtime-benchmarks = [
 	"parachains-common/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
+	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
@@ -164,7 +172,6 @@ try-runtime = [
 	"pallet-nfts/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-session/try-runtime",
-	"pallet-state-trie-migration/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-uniques/try-runtime",
@@ -178,10 +185,9 @@ try-runtime = [
 std = [
 	"assets-common/std",
 	"bp-asset-hub-rococo/std",
-	"bp-asset-hub-westend/std",
 	"bp-bridge-hub-rococo/std",
-	"bp-bridge-hub-westend/std",
 	"codec/std",
+	"cumulus-pallet-infra-parachain-core/std",
 	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
@@ -216,7 +222,7 @@ std = [
 	"pallet-nfts/std",
 	"pallet-proxy/std",
 	"pallet-session/std",
-	"pallet-state-trie-migration/std",
+	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
@@ -230,8 +236,11 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"primitive-types/std",
+	"yosemite-runtime-constants/std",
 	"scale-info/std",
+	"snowbridge-router-primitives/std",
 	"sp-api/std",
+	"sp-arithmetic/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
 	"sp-core/std",
@@ -244,13 +253,17 @@ std = [
 	"sp-storage/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"sp-weights/std",
 	"substrate-wasm-builder",
 	"testnet-parachains-constants/std",
-	"westend-runtime-constants/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"infra-asset-common/std",
+	"pallet-system-token-conversion/std",
+	"pallet-system-token-tx-payment/std",
+	"pallet-system-token-oracle/std",
 ]
 
 # Enable the metadata hash generation in the wasm builder.

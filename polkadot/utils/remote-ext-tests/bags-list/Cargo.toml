@@ -10,8 +10,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-westend-runtime = { workspace = true }
-westend-runtime-constants = { workspace = true, default-features = true }
+yosemite-runtime = { workspace = true }
+yosemite-runtime-constants = { workspace = true, default-features = true }
 
 pallet-bags-list-remote-tests = { workspace = true }
 sp-tracing = { workspace = true, default-features = true }

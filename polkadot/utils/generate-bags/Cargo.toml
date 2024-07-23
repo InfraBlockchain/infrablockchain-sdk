@@ -15,4 +15,4 @@ clap = { features = ["derive"], workspace = true }
 generate-bags = { workspace = true, default-features = true }
 sp-io = { workspace = true, default-features = true }
 
-westend-runtime = { workspace = true }
+yosemite-runtime = { workspace = true }

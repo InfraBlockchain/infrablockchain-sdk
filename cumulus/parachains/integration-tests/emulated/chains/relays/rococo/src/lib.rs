@@ -28,19 +28,19 @@ decl_test_relay_chains! {
 	pub struct Rococo {
 		genesis = genesis::genesis(),
 		on_init = (),
-		runtime = rococo_runtime,
+		runtime = yosemite_runtime,
 		core = {
-			SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter,
+			SovereignAccountOf: yosemite_runtime::xcm_config::LocationConverter,
 		},
 		pallets = {
-			XcmPallet: rococo_runtime::XcmPallet,
-			Sudo: rococo_runtime::Sudo,
-			Balances: rococo_runtime::Balances,
-			Hrmp: rococo_runtime::Hrmp,
-			Identity: rococo_runtime::Identity,
-			IdentityMigrator: rococo_runtime::IdentityMigrator,
-			Treasury: rococo_runtime::Treasury,
-			AssetRate: rococo_runtime::AssetRate,
+			XcmPallet: yosemite_runtime::XcmPallet,
+			Sudo: yosemite_runtime::Sudo,
+			Balances: yosemite_runtime::Balances,
+			Hrmp: yosemite_runtime::Hrmp,
+			Identity: yosemite_runtime::Identity,
+			IdentityMigrator: yosemite_runtime::IdentityMigrator,
+			Treasury: yosemite_runtime::Treasury,
+			AssetRate: yosemite_runtime::AssetRate,
 		}
 	},
 }

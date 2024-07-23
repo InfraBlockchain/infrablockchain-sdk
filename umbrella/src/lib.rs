@@ -27,10 +27,6 @@ pub use binary_merkle_tree;
 #[cfg(feature = "bp-asset-hub-rococo")]
 pub use bp_asset_hub_rococo;
 
-/// Primitives of AssetHubWestend parachain runtime.
-#[cfg(feature = "bp-asset-hub-westend")]
-pub use bp_asset_hub_westend;
-
 /// Primitives for BridgeHub parachain runtimes.
 #[cfg(feature = "bp-bridge-hub-cumulus")]
 pub use bp_bridge_hub_cumulus;
@@ -46,10 +42,6 @@ pub use bp_bridge_hub_polkadot;
 /// Primitives of BridgeHubRococo parachain runtime.
 #[cfg(feature = "bp-bridge-hub-rococo")]
 pub use bp_bridge_hub_rococo;
-
-/// Primitives of BridgeHubWestend parachain runtime.
-#[cfg(feature = "bp-bridge-hub-westend")]
-pub use bp_bridge_hub_westend;
 
 /// A common interface for describing what a bridge pallet should be able to do.
 #[cfg(feature = "bp-header-chain")]
@@ -94,10 +86,6 @@ pub use bp_runtime;
 /// Utilities for testing substrate-based runtime bridge code.
 #[cfg(feature = "bp-test-utils")]
 pub use bp_test_utils;
-
-/// Primitives of Westend runtime.
-#[cfg(feature = "bp-westend")]
-pub use bp_westend;
 
 /// Primitives of the xcm-bridge-hub pallet.
 #[cfg(feature = "bp-xcm-bridge-hub")]

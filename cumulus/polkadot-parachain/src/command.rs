@@ -44,7 +44,7 @@ enum Runtime {
 	#[default]
 	Default,
 	#[cfg(feature = "infra-parachain")]
-	AssetHubRococo
+	AssetHubYosemite
 }
 
 trait RuntimeResolver {
@@ -78,8 +78,8 @@ fn runtime(id: &str) -> Runtime {
 	let id = id.replace('_', "-");
 	let (_, id, para_id) = extract_parachain_id(&id);
 
-	if id.starts_with("asset-hub-rococo") {
-		Runtime::AssetHubRococo 
+	if id.starts_with("asset-hub-yosemite") {
+		Runtime::AssetHubYosemite
 	} else {
 		log::warn!("No specific runtime was recognized for ChainSpec's id: '{}', so Runtime::default() will be used", id);
 		Runtime::default()
@@ -90,25 +90,25 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 	let (id, _, para_id) = extract_parachain_id(id);
 	Ok(match id {
 		// - Default-like
-		// -- Asset Hub Rococo
+		// -- Asset Hub Yosemite
 		#[cfg(feature = "infra-parachain")]
-		"asset-hub-rococo-dev" =>
-			Box::new(chain_spec::asset_hubs::asset_hub_rococo_development_config()),
+		"asset-hub-yosemite-dev" =>
+			Box::new(chain_spec::asset_hubs::asset_hub_yosemite_development_config()),
 		#[cfg(feature = "infra-parachain")]
-		"asset-hub-rococo-local" =>
-			Box::new(chain_spec::asset_hubs::asset_hub_rococo_local_config()),
+		"asset-hub-yosemite-local" =>
+			Box::new(chain_spec::asset_hubs::asset_hub_yosemite_local_config()),
 		// the chain spec as used for generating the upgrade genesis values
 		#[cfg(feature = "infra-parachain")]
-		"asset-hub-rococo-genesis" =>
-			Box::new(chain_spec::asset_hubs::asset_hub_rococo_genesis_config()),
+		"asset-hub-yosemite-genesis" =>
+			Box::new(chain_spec::asset_hubs::asset_hub_yosemite_genesis_config()),
 		#[cfg(feature = "infra-parachain")]
-		"asset-hub-rococo" => Box::new(GenericChainSpec::from_json_bytes(
-			&include_bytes!("../chain-specs/asset-hub-rococo.json")[..],
+		"asset-hub-yosemite" => Box::new(GenericChainSpec::from_json_bytes(
+			&include_bytes!("../chain-specs/asset-hub-yosemite.json")[..],
 		)?),
 		// -- Fallback (generic chainspec)
 		"" => {
-			log::warn!("No ChainSpec.id specified, so using default one, based on rococo-parachain runtime");
-			return Err("No ChainSpec.id specified, so using default one, based on rococo-parachain runtime".into());
+			log::warn!("No ChainSpec.id specified, so using default one, based on yosemite-parachain runtime");
+			return Err("No ChainSpec.id specified, so using default one, based on yosemite-parachain runtime".into());
 		},
 
 		// -- Loading a specific spec from disk
@@ -168,7 +168,7 @@ fn extract_parachain_id(id: &str) -> (&str, &str, Option<ParaId>) {
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Polkadot parachain".into()
+		"InfraRelay parachain".into()
 	}
 
 	fn impl_version() -> String {
@@ -204,7 +204,7 @@ impl SubstrateCli for Cli {
 
 impl SubstrateCli for RelayChainCli {
 	fn impl_name() -> String {
-		"Polkadot parachain".into()
+		"InfraRelay".into()
 	}
 
 	fn impl_version() -> String {
@@ -249,7 +249,7 @@ macro_rules! construct_partials {
 				)?;
 				$code
 			},
-			Runtime::AssetHubRococo => {
+			Runtime::AssetHubYosemite => {
 				let $partials = new_partial::<RuntimeApi, _>(
 					&$config,
 					crate::service::build_relay_to_aura_import_queue::<_, AuraId>,
@@ -277,7 +277,7 @@ macro_rules! construct_async_run {
 					{ $( $code )* }.map(|v| (v, task_manager))
 				})
 			},
-			Runtime::AssetHubRococo => {
+			Runtime::AssetHubYosemite => {
 				runner.async_run(|$config| {
 					let $components = new_partial::<RuntimeApi, _>(
 						&$config,
@@ -489,7 +489,7 @@ async fn start_node<Network: sc_network::NetworkBackend<Block, Hash>>(
 	match config.chain_spec.runtime()? {
 
 		#[cfg(feature = "infra-parachain")]
-		Runtime::AssetHubRococo =>
+		Runtime::AssetHubYosemite =>
 			crate::service::start_asset_hub_lookahead_node::<RuntimeApi, AuraId, Network>(
 				config,
 				polkadot_config,

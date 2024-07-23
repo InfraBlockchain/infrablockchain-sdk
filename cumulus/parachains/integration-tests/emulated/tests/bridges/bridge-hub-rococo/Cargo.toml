@@ -38,9 +38,8 @@ testnet-parachains-constants = { features = ["yosemite"], workspace = true, defa
 cumulus-pallet-xcmp-queue = { workspace = true }
 bridge-hub-rococo-runtime = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
-rococo-westend-system-emulated-network = { workspace = true }
 rococo-system-emulated-network = { workspace = true }
-asset-hub-rococo-runtime = { workspace = true }
+asset-hub-yosemite-runtime = { workspace = true }
 
 # Snowbridge
 snowbridge-core = { workspace = true }

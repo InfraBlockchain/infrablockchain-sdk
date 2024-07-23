@@ -20,7 +20,7 @@ frame-support = { workspace = true }
 parachains-common = { workspace = true, default-features = true }
 cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
-asset-hub-rococo-runtime = { workspace = true, default-features = true }
+asset-hub-yosemite-runtime = { workspace = true, default-features = true }
 rococo-emulated-chain = { workspace = true }
 testnet-parachains-constants = { features = ["yosemite"], workspace = true, default-features = true }
 

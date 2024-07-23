@@ -29,14 +29,14 @@ enum Command {
 #[derive(Clone, Debug, ValueEnum)]
 #[value(rename_all = "PascalCase")]
 enum Runtime {
-	Westend,
+	Yosemite,
 }
 
 #[derive(Parser)]
 struct Cli {
 	#[arg(long, short, default_value = "wss://westend-rpc.polkadot.io:443")]
 	uri: String,
-	#[arg(long, short, ignore_case = true, value_enum, default_value_t = Runtime::Westend)]
+	#[arg(long, short, ignore_case = true, value_enum, default_value_t = Runtime::Yosemite)]
 	runtime: Runtime,
 	#[arg(long, short, ignore_case = true, value_enum, default_value_t = Command::SanityCheck)]
 	command: Command,
@@ -58,27 +58,27 @@ async fn main() {
 
 	use pallet_bags_list_remote_tests::*;
 	match options.runtime {
-		Runtime::Westend => sp_core::crypto::set_default_ss58_version(
-			<westend_runtime::Runtime as frame_system::Config>::SS58Prefix::get()
+		Runtime::Yosemite => sp_core::crypto::set_default_ss58_version(
+			<yosemite_runtime::Runtime as frame_system::Config>::SS58Prefix::get()
 				.try_into()
 				.unwrap(),
 		),
 	};
 
 	match (options.runtime, options.command) {
-		(Runtime::Westend, Command::CheckMigration) => {
-			use westend_runtime::{Block, Runtime};
-			use westend_runtime_constants::currency::UNITS;
+		(Runtime::Yosemite, Command::CheckMigration) => {
+			use yosemite_runtime::{Block, Runtime};
+			use yosemite_runtime_constants::currency::UNITS;
 			migration::execute::<Runtime, Block>(UNITS as u64, "WND", options.uri.clone()).await;
 		},
-		(Runtime::Westend, Command::SanityCheck) => {
-			use westend_runtime::{Block, Runtime};
-			use westend_runtime_constants::currency::UNITS;
+		(Runtime::Yosemite, Command::SanityCheck) => {
+			use yosemite_runtime::{Block, Runtime};
+			use yosemite_runtime_constants::currency::UNITS;
 			try_state::execute::<Runtime, Block>(UNITS as u64, "WND", options.uri.clone()).await;
 		},
-		(Runtime::Westend, Command::Snapshot) => {
-			use westend_runtime::{Block, Runtime};
-			use westend_runtime_constants::currency::UNITS;
+		(Runtime::Yosemite, Command::Snapshot) => {
+			use yosemite_runtime::{Block, Runtime};
+			use yosemite_runtime_constants::currency::UNITS;
 			snapshot::execute::<Runtime, Block>(
 				options.snapshot_limit,
 				UNITS.try_into().unwrap(),

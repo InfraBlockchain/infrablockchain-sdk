@@ -28,9 +28,9 @@ use emulated_integration_tests_common::{
 	accounts, build_genesis_storage, get_account_id_from_seed, get_host_config, validators,
 };
 use parachains_common::Balance;
-use rococo_runtime_constants::currency::UNITS as ROC;
+use yosemite_runtime_constants::currency::UNITS as ROC;
 
-pub const ED: Balance = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
+pub const ED: Balance = yosemite_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const ENDOWMENT: u128 = 1_000_000 * ROC;
 
 fn session_keys(
@@ -40,8 +40,8 @@ fn session_keys(
 	para_assignment: AssignmentId,
 	authority_discovery: AuthorityDiscoveryId,
 	beefy: BeefyId,
-) -> rococo_runtime::SessionKeys {
-	rococo_runtime::SessionKeys {
+) -> yosemite_runtime::SessionKeys {
+	yosemite_runtime::SessionKeys {
 		babe,
 		grandpa,
 		para_validator,
@@ -52,12 +52,12 @@ fn session_keys(
 }
 
 pub fn genesis() -> Storage {
-	let genesis_config = rococo_runtime::RuntimeGenesisConfig {
-		system: rococo_runtime::SystemConfig::default(),
-		balances: rococo_runtime::BalancesConfig {
+	let genesis_config = yosemite_runtime::RuntimeGenesisConfig {
+		system: yosemite_runtime::SystemConfig::default(),
+		balances: yosemite_runtime::BalancesConfig {
 			balances: accounts::init_balances().iter().map(|k| (k.clone(), ENDOWMENT)).collect(),
 		},
-		session: rococo_runtime::SessionConfig {
+		session: yosemite_runtime::SessionConfig {
 			keys: validators::initial_authorities()
 				.iter()
 				.map(|x| {
@@ -76,21 +76,21 @@ pub fn genesis() -> Storage {
 				})
 				.collect::<Vec<_>>(),
 		},
-		babe: rococo_runtime::BabeConfig {
+		babe: yosemite_runtime::BabeConfig {
 			authorities: Default::default(),
-			epoch_config: rococo_runtime::BABE_GENESIS_EPOCH_CONFIG,
+			epoch_config: yosemite_runtime::BABE_GENESIS_EPOCH_CONFIG,
 			..Default::default()
 		},
-		sudo: rococo_runtime::SudoConfig {
+		sudo: yosemite_runtime::SudoConfig {
 			key: Some(get_account_id_from_seed::<sr25519::Public>("Alice")),
 		},
-		configuration: rococo_runtime::ConfigurationConfig { config: get_host_config() },
-		registrar: rococo_runtime::RegistrarConfig {
+		configuration: yosemite_runtime::ConfigurationConfig { config: get_host_config() },
+		registrar: yosemite_runtime::RegistrarConfig {
 			next_free_para_id: polkadot_primitives::LOWEST_PUBLIC_ID,
 			..Default::default()
 		},
 		..Default::default()
 	};
 
-	build_genesis_storage(&genesis_config, rococo_runtime::WASM_BINARY.unwrap())
+	build_genesis_storage(&genesis_config, yosemite_runtime::WASM_BINARY.unwrap())
 }
