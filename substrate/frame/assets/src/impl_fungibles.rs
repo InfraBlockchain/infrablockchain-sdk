@@ -42,11 +42,11 @@ impl<T: Config<I>, I: 'static> fungibles::Inspect<<T as SystemConfig>::AccountId
 	}
 
 	fn balance(asset: Self::AssetId, who: &<T as SystemConfig>::AccountId) -> Self::Balance {
-		Pallet::<T, I>::balance(&asset, who)
+		Pallet::<T, I>::balance(asset, who)
 	}
 
 	fn total_balance(asset: Self::AssetId, who: &<T as SystemConfig>::AccountId) -> Self::Balance {
-		Pallet::<T, I>::balance(&asset, who)
+		Pallet::<T, I>::balance(asset, who)
 	}
 
 	fn reducible_balance(
@@ -118,6 +118,22 @@ impl<T: Config<I>, I: 'static> fungibles::Balanced<<T as SystemConfig>::AccountI
 {
 	type OnDropCredit = fungibles::DecreaseIssuance<T::AccountId, Self>;
 	type OnDropDebt = fungibles::IncreaseIssuance<T::AccountId, Self>;
+
+	fn done_deposit(
+		asset_id: Self::AssetId,
+		who: &<T as SystemConfig>::AccountId,
+		amount: Self::Balance,
+	) {
+		Self::deposit_event(Event::Deposited { asset_id, who: who.clone(), amount })
+	}
+
+	fn done_withdraw(
+		asset_id: Self::AssetId,
+		who: &<T as SystemConfig>::AccountId,
+		amount: Self::Balance,
+	) {
+		Self::deposit_event(Event::Withdrawn { asset_id, who: who.clone(), amount })
+	}
 }
 
 impl<T: Config<I>, I: 'static> fungibles::Unbalanced<T::AccountId> for Pallet<T, I> {
@@ -174,7 +190,7 @@ impl<T: Config<I>, I: 'static> fungibles::Create<T::AccountId> for Pallet<T, I> 
 		is_sufficient: bool,
 		min_balance: Self::Balance,
 	) -> DispatchResult {
-		Self::do_force_create(id, &admin, is_sufficient, min_balance, None, None, None)
+		Self::do_force_create(id, admin, is_sufficient, min_balance, None, None, None)
 	}
 }
 
@@ -199,16 +215,16 @@ impl<T: Config<I>, I: 'static> fungibles::Destroy<T::AccountId> for Pallet<T, I>
 impl<T: Config<I>, I: 'static> fungibles::metadata::Inspect<<T as SystemConfig>::AccountId>
 	for Pallet<T, I>
 {
-	fn name(asset: &T::AssetId) -> Vec<u8> {
-		Metadata::<T, I>::get(asset).map_or(Default::default(), |m| m).name.to_vec()
+	fn name(asset: T::AssetId) -> Vec<u8> {
+		Metadata::<T, I>::get(asset).name.to_vec()
 	}
 
-	fn symbol(asset: &T::AssetId) -> Vec<u8> {
-		Metadata::<T, I>::get(asset).map_or(Default::default(), |m| m).symbol.to_vec()
+	fn symbol(asset: T::AssetId) -> Vec<u8> {
+		Metadata::<T, I>::get(asset).symbol.to_vec()
 	}
 
-	fn decimals(asset: &T::AssetId) -> u8 {
-		Metadata::<T, I>::get(asset).map_or(Default::default(), |m| m).decimals
+	fn decimals(asset: T::AssetId) -> u8 {
+		Metadata::<T, I>::get(asset).decimals
 	}
 }
 
@@ -306,5 +322,37 @@ impl<T: Config<I>, I: 'static> fungibles::InspectEnumerable<T::AccountId> for Pa
 	/// NOTE: iterating this list invokes a storage read per item.
 	fn asset_ids() -> Self::AssetsIterator {
 		Asset::<T, I>::iter_keys()
+	}
+}
+
+impl<T: Config<I>, I: 'static> fungibles::roles::ResetTeam<T::AccountId> for Pallet<T, I> {
+	fn reset_team(
+		id: T::AssetId,
+		owner: T::AccountId,
+		admin: T::AccountId,
+		issuer: T::AccountId,
+		freezer: T::AccountId,
+	) -> DispatchResult {
+		Self::do_reset_team(id, owner, admin, issuer, freezer)
+	}
+}
+
+impl<T: Config<I>, I: 'static> fungibles::Refund<T::AccountId> for Pallet<T, I> {
+	type AssetId = T::AssetId;
+	type Balance = DepositBalanceOf<T, I>;
+	fn deposit_held(id: Self::AssetId, who: T::AccountId) -> Option<(T::AccountId, Self::Balance)> {
+		use ExistenceReason::*;
+		match Account::<T, I>::get(&id, &who).ok_or(Error::<T, I>::NoDeposit).ok()?.reason {
+			DepositHeld(b) => Some((who, b)),
+			DepositFrom(d, b) => Some((d, b)),
+			_ => None,
+		}
+	}
+	fn refund(id: Self::AssetId, who: T::AccountId) -> DispatchResult {
+		match Self::deposit_held(id.clone(), who.clone()) {
+			Some((d, _)) if d == who => Self::do_refund(id, who, false),
+			Some(..) => Self::do_refund_other(id, &who, None),
+			None => Err(Error::<T, I>::NoDeposit.into()),
+		}
 	}
 }

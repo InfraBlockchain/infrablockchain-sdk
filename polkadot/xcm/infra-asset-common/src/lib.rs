@@ -29,8 +29,7 @@ use frame_support::traits::{
 };
 use xcm::prelude::Location;
 use xcm_builder::{
-	AsPrefixedGeneralIndex, CreateMatcher, MatchXcm, MatchedConvertedConcreteId,
-	V4V4LocationConverter,
+	AsPrefixedGeneralIndex, CreateMatcher, MatchXcm, MatchedConvertedConcreteId, WithLatestLocationConverter
 };
 use xcm_executor::traits::{JustTry, Properties};
 
@@ -271,8 +270,8 @@ pub type NativeAssetsConvertedConcreteId<NativeAssetsPalletLocation, Balance> =
 pub type MultiLocationForAssetId = Location;
 
 /// [`MatchedConvertedConcreteId`] converter dedicated for storing `AssetId` as `Location`.
-pub type LocationConvertedConcreteId<LocationFilter, Balance> =
-	MatchedConvertedConcreteId<Location, Balance, LocationFilter, V4V4LocationConverter, JustTry>;
+pub type LocationConvertedConcreteId<LocationFilter, ConvertLocationTarget, Balance> =
+	MatchedConvertedConcreteId<Location, Balance, LocationFilter, WithLatestLocationConverter<ConvertLocationTarget>, JustTry>;
 
 /// [`MatchedConvertedConcreteId`] converter dedicated for storing `ForeignAssets` with `AssetId` as
 /// `Location`.
@@ -282,7 +281,7 @@ pub type LocationConvertedConcreteId<LocationFilter, Balance> =
 /// - all local Locations
 ///
 /// `AdditionalLocationExclusionFilter` can customize additional excluded Locations
-pub type ForeignAssetsConvertedConcreteId<AdditionalLocationExclusionFilter, Balance> =
+pub type ForeignAssetsConvertedConcreteId<AdditionalLocationExclusionFilter, ConvertLocationTarget, Balance> =
 	LocationConvertedConcreteId<
 		EverythingBut<(
 			// Excludes relay/parent chain currency
@@ -295,13 +294,14 @@ pub type ForeignAssetsConvertedConcreteId<AdditionalLocationExclusionFilter, Bal
 			// Here we can exclude more stuff or leave it as `()`
 			AdditionalLocationExclusionFilter,
 		)>,
+		ConvertLocationTarget,
 		Balance,
 	>;
 
 /// For Relay
 /// `AdditionalLocationExclusionFilter` can customize additional excluded Locations
-pub type ForeignAssetsConvertedConcreteIdForParent<AdditionalLocationExclusionFilter, Balance> =
-	LocationConvertedConcreteId<EverythingBut<AdditionalLocationExclusionFilter>, Balance>;
+pub type ForeignAssetsConvertedConcreteIdForParent<AdditionalLocationExclusionFilter, ConvertLocationTarget, Balance> =
+	LocationConvertedConcreteId<EverythingBut<AdditionalLocationExclusionFilter>, ConvertLocationTarget, Balance>;
 
 #[cfg(test)]
 mod tests {

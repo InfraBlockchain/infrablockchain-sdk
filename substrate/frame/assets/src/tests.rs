@@ -28,6 +28,8 @@ use pallet_balances::Error as BalancesError;
 use sp_io::storage;
 use sp_runtime::{traits::ConvertInto, TokenError};
 
+mod sets;
+
 fn asset_ids() -> Vec<u32> {
 	let mut s: Vec<_> = Assets::asset_ids().collect();
 	s.sort();
@@ -1328,7 +1330,7 @@ fn freezer_should_work() {
 
 #[test]
 fn imbalances_should_work() {
-	use frame_support::traits::tokens::fungibles::Balanced;
+	use frame_support::traits::fungibles::Balanced;
 
 	new_test_ext().execute_with(|| {
 		assert_ok!(Assets::force_create(RuntimeOrigin::root(), 0, 1, true, 1));
@@ -1451,7 +1453,7 @@ fn force_asset_status_should_work() {
 		));
 		assert_eq!(Assets::balance(0, 1), 50);
 
-		// account can recieve assets for balance < min_balance
+		// account can receive assets for balance < min_balance
 		assert_ok!(Assets::transfer(RuntimeOrigin::signed(2), 0, 1, 1));
 		assert_eq!(Assets::balance(0, 1), 51);
 
@@ -1591,7 +1593,7 @@ fn assets_from_genesis_should_exist() {
 #[test]
 fn querying_name_symbol_and_decimals_should_work() {
 	new_test_ext().execute_with(|| {
-		use frame_support::traits::tokens::fungibles::metadata::Inspect;
+		use frame_support::traits::fungibles::metadata::Inspect;
 		assert_ok!(Assets::force_create(RuntimeOrigin::root(), 0, 1, true, 1));
 		assert_ok!(Assets::force_set_metadata(
 			RuntimeOrigin::root(),
@@ -1610,7 +1612,7 @@ fn querying_name_symbol_and_decimals_should_work() {
 #[test]
 fn querying_allowance_should_work() {
 	new_test_ext().execute_with(|| {
-		use frame_support::traits::tokens::fungibles::approvals::{Inspect, Mutate};
+		use frame_support::traits::fungibles::approvals::{Inspect, Mutate};
 		assert_ok!(Assets::force_create(RuntimeOrigin::root(), 0, 1, true, 1));
 		assert_ok!(Assets::mint(RuntimeOrigin::signed(1), 0, 1, 100));
 		Balances::make_free_balance_be(&1, 2);
@@ -1635,7 +1637,7 @@ fn transfer_large_asset() {
 #[test]
 fn querying_roles_should_work() {
 	new_test_ext().execute_with(|| {
-		use frame_support::traits::tokens::fungibles::roles::Inspect;
+		use frame_support::traits::fungibles::roles::Inspect;
 		assert_ok!(Assets::force_create(RuntimeOrigin::root(), 0, 1, true, 1));
 		assert_ok!(Assets::set_team(
 			RuntimeOrigin::signed(1),
@@ -1773,5 +1775,73 @@ fn asset_destroy_refund_existence_deposit() {
 		assert_eq!(Balances::reserved_balance(&account2), 0);
 		assert_eq!(Balances::reserved_balance(&account3), 0);
 		assert_eq!(Balances::reserved_balance(&admin), 0);
+	});
+}
+
+#[test]
+fn asset_id_cannot_be_reused() {
+	new_test_ext().execute_with(|| {
+		Balances::make_free_balance_be(&1, 100);
+		// Asset id can be reused till auto increment is not enabled.
+		assert_ok!(Assets::create(RuntimeOrigin::signed(1), 0, 1, 1));
+
+		assert_ok!(Assets::start_destroy(RuntimeOrigin::signed(1), 0));
+		assert_ok!(Assets::finish_destroy(RuntimeOrigin::signed(1), 0));
+
+		assert!(!Asset::<Test>::contains_key(0));
+
+		// Asset id `0` is reused.
+		assert_ok!(Assets::create(RuntimeOrigin::signed(1), 0, 1, 1));
+		assert!(Asset::<Test>::contains_key(0));
+
+		assert_ok!(Assets::start_destroy(RuntimeOrigin::signed(1), 0));
+		assert_ok!(Assets::finish_destroy(RuntimeOrigin::signed(1), 0));
+
+		assert!(!Asset::<Test>::contains_key(0));
+
+		// Enable auto increment. Next asset id must be 5.
+		pallet::NextAssetId::<Test>::put(5);
+
+		assert_noop!(Assets::create(RuntimeOrigin::signed(1), 0, 1, 1), Error::<Test>::BadAssetId);
+		assert_noop!(Assets::create(RuntimeOrigin::signed(1), 1, 1, 1), Error::<Test>::BadAssetId);
+		assert_noop!(
+			Assets::force_create(RuntimeOrigin::root(), 0, 1, false, 1),
+			Error::<Test>::BadAssetId
+		);
+		assert_noop!(
+			Assets::force_create(RuntimeOrigin::root(), 1, 1, true, 1),
+			Error::<Test>::BadAssetId
+		);
+
+		// Asset with id `5` is created.
+		assert_ok!(Assets::create(RuntimeOrigin::signed(1), 5, 1, 1));
+		assert!(Asset::<Test>::contains_key(5));
+
+		// Destroy asset with id `6`.
+		assert_ok!(Assets::start_destroy(RuntimeOrigin::signed(1), 5));
+		assert_ok!(Assets::finish_destroy(RuntimeOrigin::signed(1), 5));
+
+		assert!(!Asset::<Test>::contains_key(0));
+
+		// Asset id `5` cannot be reused.
+		assert_noop!(Assets::create(RuntimeOrigin::signed(1), 5, 1, 1), Error::<Test>::BadAssetId);
+
+		assert_ok!(Assets::create(RuntimeOrigin::signed(1), 6, 1, 1));
+		assert!(Asset::<Test>::contains_key(6));
+
+		// Destroy asset with id `6`.
+		assert_ok!(Assets::start_destroy(RuntimeOrigin::signed(1), 6));
+		assert_ok!(Assets::finish_destroy(RuntimeOrigin::signed(1), 6));
+
+		assert!(!Asset::<Test>::contains_key(6));
+
+		// Asset id `6` cannot be reused with force.
+		assert_noop!(
+			Assets::force_create(RuntimeOrigin::root(), 6, 1, false, 1),
+			Error::<Test>::BadAssetId
+		);
+
+		assert_ok!(Assets::force_create(RuntimeOrigin::root(), 7, 1, false, 1));
+		assert!(Asset::<Test>::contains_key(7));
 	});
 }

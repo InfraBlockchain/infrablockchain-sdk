@@ -49,7 +49,7 @@ impl<T: Config<I>, I: 'static> EnumerateSystemToken<T::AccountId> for Pallet<T, 
 	fn system_token_account_balances(
 		who: &T::AccountId,
 	) -> impl IntoIterator<Item = (Self::AssetId, Self::Balance)> {
-		Self::account_balances(who)
+		Self::account_balances(who.clone())
 			.iter()
 			.filter(|(i, _)| <Self as InspectSystemToken<T::AccountId>>::is_system_token(i))
 			.map(|(i, b)| (i.clone(), b.clone()))

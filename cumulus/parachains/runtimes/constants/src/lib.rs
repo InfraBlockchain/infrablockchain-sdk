@@ -15,5 +15,5 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "infra-relay")]
-pub mod infra_relay;
+#[cfg(feature = "yosemite")]
+pub mod yosemite;

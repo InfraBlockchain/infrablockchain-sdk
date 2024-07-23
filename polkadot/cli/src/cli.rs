@@ -16,18 +16,10 @@
 
 //! Polkadot CLI library.
 
+pub use polkadot_node_primitives::NODE_VERSION;
+
 use clap::Parser;
 use std::path::PathBuf;
-
-/// The version of the node.
-///
-/// This is the version that is used for versioning this node binary.
-/// By default the `minor` version is bumped in every release. `Major` or `patch` releases are only
-/// expected in very rare cases.
-///
-/// The worker binaries associated to the node binary should ensure that they are using the same
-/// version as the main node that started them.
-pub const NODE_VERSION: &'static str = "1.1.0";
 
 #[allow(missing_docs)]
 #[derive(Debug, Parser)]
@@ -58,11 +50,6 @@ pub enum Subcommand {
 	#[command(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
-	/// Try-runtime has migrated to a standalone CLI
-	/// (<https://github.com/paritytech/try-runtime-cli>). The subcommand exists as a stub and
-	/// deprecation notice. It will be removed entirely some time after Janurary 2024.
-	TryRuntime,
-
 	/// Key management CLI utilities
 	#[command(subcommand)]
 	Key(sc_cli::KeySubcommand),
@@ -82,13 +69,9 @@ pub struct RunCmd {
 	#[arg(long = "force-kusama")]
 	pub force_kusama: bool,
 
-	/// Force using Westend native runtime.
-	#[arg(long = "force-westend")]
-	pub force_westend: bool,
-
-	/// Force using Rococo native runtime.
-	#[arg(long = "force-rococo")]
-	pub force_rococo: bool,
+	/// Force using Yosemite native runtime.
+	#[arg(long = "force-yosemite")]
+	pub force_yosemite: bool,
 
 	/// Disable the BEEFY gadget.
 	///
@@ -144,6 +127,23 @@ pub struct RunCmd {
 	#[arg(long, value_name = "PATH")]
 	pub workers_path: Option<PathBuf>,
 
+	/// Override the maximum number of pvf execute workers.
+	///
+	///  **Dangerous!** Do not touch unless explicitly advised to.
+	#[arg(long)]
+	pub execute_workers_max_num: Option<usize>,
+	/// Override the maximum number of pvf workers that can be spawned in the pvf prepare
+	/// pool for tasks with the priority below critical.
+	///
+	///  **Dangerous!** Do not touch unless explicitly advised to.
+
+	#[arg(long)]
+	pub prepare_workers_soft_max_num: Option<usize>,
+	/// Override the absolute number of pvf workers that can be spawned in the pvf prepare pool.
+	///
+	///  **Dangerous!** Do not touch unless explicitly advised to.
+	#[arg(long)]
+	pub prepare_workers_hard_max_num: Option<usize>,
 	/// TESTING ONLY: disable the version check between nodes and workers.
 	#[arg(long, hide = true)]
 	pub disable_worker_version_check: bool,

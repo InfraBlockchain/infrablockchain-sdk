@@ -54,12 +54,6 @@ pub(super) enum AssetStatus {
 	Suspend,
 }
 
-impl AssetStatus {
-	pub fn is_mintable(&self) -> bool {
-		matches!(self, AssetStatus::Live | AssetStatus::Requested | AssetStatus::InActive)
-	}
-}
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct AssetDetails<Balance, AccountId, DepositBalance, Weight> {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
@@ -94,19 +88,6 @@ pub struct AssetDetails<Balance, AccountId, DepositBalance, Weight> {
 	/// The system token weight compared with base system token. 'None' if it is not a system
 	/// token.
 	pub(super) system_token_weight: Option<Weight>,
-}
-
-impl<Balance, AccountId, DepositBalance, Weight>
-	AssetDetails<Balance, AccountId, DepositBalance, Weight>
-{
-	pub fn set_system_token_weight(&mut self, weight: Weight) {
-		self.system_token_weight = Some(weight);
-	}
-
-	/// Change its status of asset to 'Requested' when it is requested to be used as System Token
-	pub fn set_request_status(&mut self) {
-		self.status = AssetStatus::Requested;
-	}
 }
 
 /// Data concerning an approval.
@@ -155,7 +136,7 @@ where
 			return None
 		}
 		if let ExistenceReason::DepositHeld(deposit) =
-			sp_std::mem::replace(self, ExistenceReason::DepositRefunded)
+			core::mem::replace(self, ExistenceReason::DepositRefunded)
 		{
 			Some(deposit)
 		} else {
@@ -168,7 +149,7 @@ where
 			return None
 		}
 		if let ExistenceReason::DepositFrom(depositor, deposit) =
-			sp_std::mem::replace(self, ExistenceReason::DepositRefunded)
+			core::mem::replace(self, ExistenceReason::DepositRefunded)
 		{
 			Some((depositor, deposit))
 		} else {
@@ -265,17 +246,17 @@ impl<AssetId, AccountId, Balance> FrozenBalance<AssetId, AccountId, Balance> for
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub struct TransferFlags {
+pub(super) struct TransferFlags {
 	/// The debited account must stay alive at the end of the operation; an error is returned if
 	/// this cannot be achieved legally.
-	pub keep_alive: bool,
+	pub(super) keep_alive: bool,
 	/// Less than the amount specified needs be debited by the operation for it to be considered
 	/// successful. If `false`, then the amount debited will always be at least the amount
 	/// specified.
-	pub best_effort: bool,
+	pub(super) best_effort: bool,
 	/// Any additional funds debited (due to minimum balance requirements) should be burned rather
 	/// than credited to the destination account.
-	pub burn_dust: bool,
+	pub(super) burn_dust: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -305,8 +286,6 @@ pub enum ConversionError {
 	/// The asset is not sufficient and thus does not have a reliable `min_balance` so it cannot be
 	/// converted.
 	AssetNotSufficient,
-	/// Weight of system token is missing,
-	WeightMissing,
 }
 
 // Type alias for `frame_system`'s account id.
@@ -318,8 +297,7 @@ type AssetBalanceOf<T, I> = <T as Config<I>>::Balance;
 type BalanceOf<F, T> = <F as fungible::Inspect<AccountIdOf<T>>>::Balance;
 
 /// Converts a balance value into an asset balance based on the ratio between the fungible's
-/// minimum balance and the minimum asset balance.pub struct BalanceToAssetBalance<F, T, CON, I =
-/// ()>(PhantomData<(F, T, CON, I)>);
+/// minimum balance and the minimum asset balance.
 pub struct BalanceToAssetBalance<F, T, CON, I = ()>(PhantomData<(F, T, CON, I)>);
 impl<F, T, CON, I> ConversionToAssetBalance<BalanceOf<F, T>, AssetIdOf<T, I>, AssetBalanceOf<T, I>>
 	for BalanceToAssetBalance<F, T, CON, I>
@@ -328,8 +306,6 @@ where
 	T: Config<I>,
 	I: 'static,
 	CON: Convert<BalanceOf<F, T>, AssetBalanceOf<T, I>>,
-	BalanceOf<F, T>: sp_runtime::FixedPointOperand + Zero,
-	AssetBalanceOf<T, I>: sp_runtime::FixedPointOperand + Zero,
 {
 	type Error = ConversionError;
 
@@ -342,23 +318,15 @@ where
 		balance: BalanceOf<F, T>,
 		asset_id: AssetIdOf<T, I>,
 	) -> Result<AssetBalanceOf<T, I>, ConversionError> {
-		let mut asset = Asset::<T, I>::get(asset_id).ok_or(ConversionError::AssetMissing)?;
+		let asset = Asset::<T, I>::get(asset_id).ok_or(ConversionError::AssetMissing)?;
 		// only sufficient assets have a min balance with reliable value
 		ensure!(asset.is_sufficient, ConversionError::AssetNotSufficient);
-		let system_token_weight =
-			asset.system_token_weight.take().ok_or(ConversionError::WeightMissing)?;
-
-		// ToDo
-		// 1. Acutal min ratio should be handled!
-		// 2. CON should be handled. Now it is Balance pallet
-		//
-		// let min_balance = CON::convert(F::minimum_balance());
+		let min_balance = CON::convert(F::minimum_balance());
 		// make sure we don't divide by zero
-		// ensure!(!min_balance.is_zero(), ConversionError::MinBalanceZero);
+		ensure!(!min_balance.is_zero(), ConversionError::MinBalanceZero);
 		let balance = CON::convert(balance);
-
-		// balance * para_fee_rate / (system_token_weight * correction_para_fee_rate)
-		// ToDo: Divisor should be changed based on the decimals
-		Ok(FixedU128::saturating_from_rational(1, system_token_weight).saturating_mul_int(balance))
+		// balance * asset.min_balance / min_balance
+		Ok(FixedU128::saturating_from_rational(asset.min_balance, min_balance)
+			.saturating_mul_int(balance))
 	}
 }

@@ -25,23 +25,23 @@
 use std::pin::Pin;
 
 use bounded_vec::BoundedVec;
+use codec::{Decode, Encode, Error as CodecError, Input};
 use futures::Future;
-use parity_scale_codec::{Decode, Encode, Error as CodecError, Input};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use polkadot_primitives::{
-	BlakeTwo256, BlockNumber, CandidateCommitments, CandidateHash, CollatorPair,
+	BlakeTwo256, BlockNumber, CandidateCommitments, CandidateHash, ChunkIndex, CollatorPair,
 	CommittedCandidateReceipt, CompactStatement, CoreIndex, EncodeAs, Hash, HashT, HeadData,
-	Id as ParaId, OpaqueRemoteAssetMetadata, PersistedValidationData, SessionIndex, Signed,
-	UncheckedSigned, ValidationCode, ValidationCodeHash, ValidatorIndex, MAX_CODE_SIZE,
-	MAX_POV_SIZE,
+	Id as ParaId, PersistedValidationData, OpaqueRemoteAssetMetadata, SessionIndex, Signed, UncheckedSigned, ValidationCode,
+	ValidationCodeHash, MAX_CODE_SIZE, MAX_POV_SIZE,
 };
 pub use sp_consensus_babe::{
 	AllowedSlots as BabeAllowedSlots, BabeEpochConfiguration, Epoch as BabeEpoch,
+	Randomness as BabeRandomness,
 };
 
 pub use polkadot_parachain_primitives::primitives::{
-	BlockData, HorizontalMessages, PoTs, UpwardMessages,
+	BlockData, HorizontalMessages, UpwardMessages, PoTs,
 };
 
 pub mod approval;
@@ -59,7 +59,7 @@ pub use disputes::{
 /// relatively rare.
 ///
 /// The associated worker binaries should use the same version as the node that spawns them.
-pub const NODE_VERSION: &'static str = "1.10.0";
+pub const NODE_VERSION: &'static str = "1.14.0";
 
 // For a 16-ary Merkle Prefix Trie, we can expect at most 16 32-byte hashes per node
 // plus some overhead:
@@ -644,7 +644,7 @@ pub struct ErasureChunk {
 	/// The erasure-encoded chunk of data belonging to the candidate block.
 	pub chunk: Vec<u8>,
 	/// The index of this erasure-encoded chunk of data.
-	pub index: ValidatorIndex,
+	pub index: ChunkIndex,
 	/// Proof for this chunk's branch in the Merkle tree.
 	pub proof: Proof,
 }

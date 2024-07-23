@@ -17,7 +17,7 @@
 //! `V7` Primitives.
 
 use bitvec::{field::BitField, slice::BitSlice, vec::BitVec};
-use parity_scale_codec::{Decode, Encode};
+use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{
 	marker::PhantomData,
@@ -26,27 +26,25 @@ use sp_std::{
 	vec::IntoIter,
 };
 
-use application_crypto::KeyTypeId;
-use inherents::InherentIdentifier;
-use primitives::RuntimeDebug;
-pub use runtime_primitives::infra::SystemConfig;
-use runtime_primitives::traits::{AppVerify, Header as HeaderT};
+use sp_application_crypto::KeyTypeId;
 use sp_arithmetic::traits::{BaseArithmetic, Saturating};
+use sp_core::RuntimeDebug;
+use sp_inherents::InherentIdentifier;
+pub use sp_runtime::{traits::{AppVerify, Header as HeaderT}, infra::SystemConfig};
 
-pub use runtime_primitives::traits::{BlakeTwo256, Hash as HashT};
+pub use sp_runtime::traits::{BlakeTwo256, Hash as HashT};
 
 // Export some core primitives.
 pub use polkadot_core_primitives::v2::{
 	AccountId, AccountIndex, AccountPublic, Balance, Block, BlockId, BlockNumber, CandidateHash,
 	ChainId, DownwardMessage, Hash, Header, InboundDownwardMessage, InboundHrmpMessage, Moment,
-	Nonce, OpaquePoT, OpaqueRemoteAssetMetadata, OutboundHrmpMessage, Remark, Signature,
-	UncheckedExtrinsic,
+	Nonce, OutboundHrmpMessage, Remark, Signature, UncheckedExtrinsic, OpaquePoT, OpaqueRemoteAssetMetadata,
 };
 
 // Export some polkadot-parachain primitives
 pub use polkadot_parachain_primitives::primitives::{
-	HeadData, HorizontalMessages, HrmpChannelId, Id, PoTs, UpwardMessage, UpwardMessages,
-	ValidationCode, ValidationCodeHash, LOWEST_PUBLIC_ID,
+	HeadData, HorizontalMessages, HrmpChannelId, Id, UpwardMessage, UpwardMessages, ValidationCode,
+	ValidationCodeHash, LOWEST_PUBLIC_ID, PoTs
 };
 
 use serde::{Deserialize, Serialize};
@@ -64,7 +62,9 @@ pub mod executor_params;
 pub mod slashing;
 
 pub use async_backing::AsyncBackingParams;
-pub use executor_params::{ExecutorParam, ExecutorParamError, ExecutorParams, ExecutorParamsHash};
+pub use executor_params::{
+	ExecutorParam, ExecutorParamError, ExecutorParams, ExecutorParamsHash, ExecutorParamsPrepHash,
+};
 
 mod metrics;
 pub use metrics::{
@@ -77,7 +77,7 @@ pub const COLLATOR_KEY_TYPE_ID: KeyTypeId = KeyTypeId(*b"coll");
 const LOG_TARGET: &str = "runtime::primitives";
 
 mod collator_app {
-	use application_crypto::{app_crypto, sr25519};
+	use sp_application_crypto::{app_crypto, sr25519};
 	app_crypto!(sr25519, super::COLLATOR_KEY_TYPE_ID);
 }
 
@@ -95,7 +95,7 @@ pub type CollatorSignature = collator_app::Signature;
 pub const PARACHAIN_KEY_TYPE_ID: KeyTypeId = KeyTypeId(*b"para");
 
 mod validator_app {
-	use application_crypto::{app_crypto, sr25519};
+	use sp_application_crypto::{app_crypto, sr25519};
 	app_crypto!(sr25519, super::PARACHAIN_KEY_TYPE_ID);
 }
 
@@ -117,6 +117,34 @@ pub trait TypeIndex {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Hash))]
 pub struct ValidatorIndex(pub u32);
 
+/// Index of an availability chunk.
+///
+/// The underlying type is identical to `ValidatorIndex`, because
+/// the number of chunks will always be equal to the number of validators.
+/// However, the chunk index held by a validator may not always be equal to its `ValidatorIndex`, so
+/// we use a separate type to make code easier to read.
+#[derive(Eq, Ord, PartialEq, PartialOrd, Copy, Clone, Encode, Decode, TypeInfo, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Hash))]
+pub struct ChunkIndex(pub u32);
+
+impl From<ChunkIndex> for ValidatorIndex {
+	fn from(c_index: ChunkIndex) -> Self {
+		ValidatorIndex(c_index.0)
+	}
+}
+
+impl From<ValidatorIndex> for ChunkIndex {
+	fn from(v_index: ValidatorIndex) -> Self {
+		ChunkIndex(v_index.0)
+	}
+}
+
+impl From<u32> for ChunkIndex {
+	fn from(n: u32) -> Self {
+		ChunkIndex(n)
+	}
+}
+
 // We should really get https://github.com/paritytech/polkadot/issues/2403 going ..
 impl From<u32> for ValidatorIndex {
 	fn from(n: u32) -> Self {
@@ -130,7 +158,7 @@ impl TypeIndex for ValidatorIndex {
 	}
 }
 
-application_crypto::with_pair! {
+sp_application_crypto::with_pair! {
 	/// A Parachain validator keypair.
 	pub type ValidatorPair = validator_app::Pair;
 }
@@ -144,8 +172,8 @@ pub type ValidatorSignature = validator_app::Signature;
 /// A declarations of storage keys where an external observer can find some interesting data.
 pub mod well_known_keys {
 	use super::{HrmpChannelId, Id, WellKnownKey};
+	use codec::Encode as _;
 	use hex_literal::hex;
-	use parity_scale_codec::Encode as _;
 	use sp_io::hashing::twox_64;
 	use sp_std::prelude::*;
 
@@ -191,29 +219,11 @@ pub mod well_known_keys {
 	pub const CURRENT_SLOT: &[u8] =
 		&hex!["1cb6f36e027abb2091cfb5110ab5087f06155b3cd9a8c9e5e9a23fd5dc13a5ed"];
 
-	/// The currently active system configuration for InfraBlockchain
-	pub const ACTIVE_SYSTEM_CONFIG: &[u8] =
-		&hex!["06de3d8a54d27e44a9d5ce189618f22d4749b1555450acbdc9c90fdcafcce80c"];
-
 	/// The currently active host configuration.
 	///
 	/// The storage entry should be accessed as an `AbridgedHostConfiguration` encoded value.
 	pub const ACTIVE_CONFIG: &[u8] =
 		&hex!["06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385"];
-
-	/// Weight needs to be updated for `para_id`
-	pub fn update_system_token_weight(para_id: Id) -> Vec<u8> {
-		let prefix = hex!["8b48ccceef96f69546d630a6a9445f25262f55aa25e8eaac78e113273688c349"];
-		para_id.using_encoded(|para_id: &[u8]| {
-			prefix
-				.as_ref()
-				.iter()
-				.chain(twox_64(para_id).iter())
-				.chain(para_id.iter())
-				.cloned()
-				.collect()
-		})
-	}
 
 	/// Hash of the committed head data for a given registered para.
 	///
@@ -433,7 +443,7 @@ pub const LEGACY_MIN_BACKING_VOTES: u32 = 2;
 // The public key of a keypair used by a validator for determining assignments
 /// to approve included parachain candidates.
 mod assignment_app {
-	use application_crypto::{app_crypto, sr25519};
+	use sp_application_crypto::{app_crypto, sr25519};
 	app_crypto!(sr25519, super::ASSIGNMENT_KEY_TYPE_ID);
 }
 
@@ -441,7 +451,7 @@ mod assignment_app {
 /// to approve included parachain candidates.
 pub type AssignmentId = assignment_app::Public;
 
-application_crypto::with_pair! {
+sp_application_crypto::with_pair! {
 	/// The full keypair used by a validator for determining assignments to approve included
 	/// parachain candidates.
 	pub type AssignmentPair = assignment_app::Pair;
@@ -854,7 +864,7 @@ pub fn check_candidate_backing<H: AsRef<[u8]> + Clone + Encode + core::fmt::Debu
 			group_len,
 			validator_indices.len(),
 		);
-		return Err(());
+		return Err(())
 	}
 
 	if validity_votes.len() > group_len {
@@ -864,7 +874,7 @@ pub fn check_candidate_backing<H: AsRef<[u8]> + Clone + Encode + core::fmt::Debu
 			group_len,
 			validity_votes.len(),
 		);
-		return Err(());
+		return Err(())
 	}
 
 	let mut signed = 0;
@@ -887,7 +897,7 @@ pub fn check_candidate_backing<H: AsRef<[u8]> + Clone + Encode + core::fmt::Debu
 				validator_id,
 				val_in_group_idx,
 			);
-			return Err(());
+			return Err(())
 		}
 	}
 
@@ -898,7 +908,7 @@ pub fn check_candidate_backing<H: AsRef<[u8]> + Clone + Encode + core::fmt::Debu
 			validity_votes.len(),
 			signed,
 		);
-		return Err(());
+		return Err(())
 	}
 
 	Ok(signed)
@@ -972,10 +982,10 @@ impl GroupRotationInfo {
 	/// `core_index` should be less than `cores`, which is capped at `u32::max()`.
 	pub fn group_for_core(&self, core_index: CoreIndex, cores: usize) -> GroupIndex {
 		if self.group_rotation_frequency == 0 {
-			return GroupIndex(core_index.0);
+			return GroupIndex(core_index.0)
 		}
 		if cores == 0 {
-			return GroupIndex(0);
+			return GroupIndex(0)
 		}
 
 		let cores = sp_std::cmp::min(cores, u32::MAX as usize);
@@ -994,10 +1004,10 @@ impl GroupRotationInfo {
 	/// `core_index` should be less than `cores`, which is capped at `u32::max()`.
 	pub fn core_for_group(&self, group_index: GroupIndex, cores: usize) -> CoreIndex {
 		if self.group_rotation_frequency == 0 {
-			return CoreIndex(group_index.0);
+			return CoreIndex(group_index.0)
 		}
 		if cores == 0 {
-			return CoreIndex(0);
+			return CoreIndex(0)
 		}
 
 		let cores = sp_std::cmp::min(cores, u32::MAX as usize);
@@ -1029,15 +1039,15 @@ impl<N: Saturating + BaseArithmetic + Copy> GroupRotationInfo<N> {
 	/// is 10 and the rotation frequency is 5, this should return 15.
 	pub fn next_rotation_at(&self) -> N {
 		let cycle_once = self.now + self.group_rotation_frequency;
-		cycle_once
-			- (cycle_once.saturating_sub(self.session_start_block) % self.group_rotation_frequency)
+		cycle_once -
+			(cycle_once.saturating_sub(self.session_start_block) % self.group_rotation_frequency)
 	}
 
 	/// Returns the block number of the last rotation before or including the current block. If the
 	/// current block is 10 and the rotation frequency is 5, this should return 10.
 	pub fn last_rotation_at(&self) -> N {
-		self.now
-			- (self.now.saturating_sub(self.session_start_block) % self.group_rotation_frequency)
+		self.now -
+			(self.now.saturating_sub(self.session_start_block) % self.group_rotation_frequency)
 	}
 }
 
@@ -1110,10 +1120,16 @@ pub enum CoreState<H = Hash, N = BlockNumber> {
 }
 
 impl<N> CoreState<N> {
-	/// If this core state has a `para_id`, return it.
+	/// Returns the scheduled `ParaId` for the core or `None` if nothing is scheduled.
+	///
+	/// This function is deprecated. `ClaimQueue` should be used to obtain the scheduled `ParaId`s
+	/// for each core.
+	#[deprecated(
+		note = "`para_id` will be removed. Use `ClaimQueue` to query the scheduled `para_id` instead."
+	)]
 	pub fn para_id(&self) -> Option<Id> {
 		match self {
-			Self::Occupied(ref core) => Some(core.para_id()),
+			Self::Occupied(ref core) => core.next_up_on_available.as_ref().map(|n| n.para_id),
 			Self::Scheduled(core) => Some(core.para_id),
 			Self::Free => None,
 		}
@@ -1349,7 +1365,7 @@ pub enum UpgradeGoAhead {
 }
 
 /// Consensus engine id for polkadot v1 consensus engine.
-pub const POLKADOT_ENGINE_ID: runtime_primitives::ConsensusEngineId = *b"POL1";
+pub const POLKADOT_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"POL1";
 
 /// A consensus log item for polkadot validation. To be used with [`POLKADOT_ENGINE_ID`].
 #[derive(Decode, Encode, Clone, PartialEq, Eq)]
@@ -1379,19 +1395,18 @@ pub enum ConsensusLog {
 impl ConsensusLog {
 	/// Attempt to convert a reference to a generic digest item into a consensus log.
 	pub fn from_digest_item(
-		digest_item: &runtime_primitives::DigestItem,
-	) -> Result<Option<Self>, parity_scale_codec::Error> {
+		digest_item: &sp_runtime::DigestItem,
+	) -> Result<Option<Self>, codec::Error> {
 		match digest_item {
-			runtime_primitives::DigestItem::Consensus(id, encoded) if id == &POLKADOT_ENGINE_ID => {
-				Ok(Some(Self::decode(&mut &encoded[..])?))
-			},
+			sp_runtime::DigestItem::Consensus(id, encoded) if id == &POLKADOT_ENGINE_ID =>
+				Ok(Some(Self::decode(&mut &encoded[..])?)),
 			_ => Ok(None),
 		}
 	}
 }
 
-impl From<ConsensusLog> for runtime_primitives::DigestItem {
-	fn from(c: ConsensusLog) -> runtime_primitives::DigestItem {
+impl From<ConsensusLog> for sp_runtime::DigestItem {
+	fn from(c: ConsensusLog) -> sp_runtime::DigestItem {
 		Self::Consensus(POLKADOT_ENGINE_ID, c.encode())
 	}
 }
@@ -1420,38 +1435,33 @@ impl DisputeStatement {
 		session: SessionIndex,
 	) -> Result<Vec<u8>, ()> {
 		match self {
-			DisputeStatement::Valid(ValidDisputeStatementKind::Explicit) => {
+			DisputeStatement::Valid(ValidDisputeStatementKind::Explicit) =>
 				Ok(ExplicitDisputeStatement { valid: true, candidate_hash, session }
-					.signing_payload())
-			},
+					.signing_payload()),
 			DisputeStatement::Valid(ValidDisputeStatementKind::BackingSeconded(
 				inclusion_parent,
 			)) => Ok(CompactStatement::Seconded(candidate_hash).signing_payload(&SigningContext {
 				session_index: session,
 				parent_hash: *inclusion_parent,
 			})),
-			DisputeStatement::Valid(ValidDisputeStatementKind::BackingValid(inclusion_parent)) => {
+			DisputeStatement::Valid(ValidDisputeStatementKind::BackingValid(inclusion_parent)) =>
 				Ok(CompactStatement::Valid(candidate_hash).signing_payload(&SigningContext {
 					session_index: session,
 					parent_hash: *inclusion_parent,
-				}))
-			},
-			DisputeStatement::Valid(ValidDisputeStatementKind::ApprovalChecking) => {
-				Ok(ApprovalVote(candidate_hash).signing_payload(session))
-			},
+				})),
+			DisputeStatement::Valid(ValidDisputeStatementKind::ApprovalChecking) =>
+				Ok(ApprovalVote(candidate_hash).signing_payload(session)),
 			DisputeStatement::Valid(
 				ValidDisputeStatementKind::ApprovalCheckingMultipleCandidates(candidate_hashes),
-			) => {
+			) =>
 				if candidate_hashes.contains(&candidate_hash) {
 					Ok(ApprovalVoteMultipleCandidates(candidate_hashes).signing_payload(session))
 				} else {
 					Err(())
-				}
-			},
-			DisputeStatement::Invalid(InvalidDisputeStatementKind::Explicit) => {
+				},
+			DisputeStatement::Invalid(InvalidDisputeStatementKind::Explicit) =>
 				Ok(ExplicitDisputeStatement { valid: false, candidate_hash, session }
-					.signing_payload())
-			},
+					.signing_payload()),
 		}
 	}
 
@@ -1524,11 +1534,11 @@ impl ValidDisputeStatementKind {
 	/// Whether the statement is from the backing phase.
 	pub fn is_backing(&self) -> bool {
 		match self {
-			ValidDisputeStatementKind::BackingSeconded(_)
-			| ValidDisputeStatementKind::BackingValid(_) => true,
-			ValidDisputeStatementKind::Explicit
-			| ValidDisputeStatementKind::ApprovalChecking
-			| ValidDisputeStatementKind::ApprovalCheckingMultipleCandidates(_) => false,
+			ValidDisputeStatementKind::BackingSeconded(_) |
+			ValidDisputeStatementKind::BackingValid(_) => true,
+			ValidDisputeStatementKind::Explicit |
+			ValidDisputeStatementKind::ApprovalChecking |
+			ValidDisputeStatementKind::ApprovalCheckingMultipleCandidates(_) => false,
 		}
 	}
 }
@@ -1683,12 +1693,10 @@ impl ValidityAttestation {
 		signing_context: &SigningContext<H>,
 	) -> Vec<u8> {
 		match *self {
-			ValidityAttestation::Implicit(_) => {
-				(CompactStatement::Seconded(candidate_hash), signing_context).encode()
-			},
-			ValidityAttestation::Explicit(_) => {
-				(CompactStatement::Valid(candidate_hash), signing_context).encode()
-			},
+			ValidityAttestation::Implicit(_) =>
+				(CompactStatement::Seconded(candidate_hash), signing_context).encode(),
+			ValidityAttestation::Explicit(_) =>
+				(CompactStatement::Valid(candidate_hash), signing_context).encode(),
 		}
 	}
 }
@@ -1748,25 +1756,23 @@ impl From<CompactStatement> for CompactStatementInner {
 	}
 }
 
-impl parity_scale_codec::Encode for CompactStatement {
+impl codec::Encode for CompactStatement {
 	fn size_hint(&self) -> usize {
 		// magic + discriminant + payload
 		4 + 1 + 32
 	}
 
-	fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		dest.write(&BACKING_STATEMENT_MAGIC);
 		CompactStatementInner::from(self.clone()).encode_to(dest)
 	}
 }
 
-impl parity_scale_codec::Decode for CompactStatement {
-	fn decode<I: parity_scale_codec::Input>(
-		input: &mut I,
-	) -> Result<Self, parity_scale_codec::Error> {
+impl codec::Decode for CompactStatement {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let maybe_magic = <[u8; 4]>::decode(input)?;
 		if maybe_magic != BACKING_STATEMENT_MAGIC {
-			return Err(parity_scale_codec::Error::from("invalid magic string"));
+			return Err(codec::Error::from("invalid magic string"))
 		}
 
 		Ok(match CompactStatementInner::decode(input)? {
@@ -1809,6 +1815,14 @@ where
 		K: TypeIndex,
 	{
 		self.0.get(index.type_index())
+	}
+
+	/// Returns a mutable reference to an element indexed using `K`.
+	pub fn get_mut(&mut self, index: K) -> Option<&mut V>
+	where
+		K: TypeIndex,
+	{
+		self.0.get_mut(index.type_index())
 	}
 
 	/// Returns number of elements in vector.
@@ -1975,7 +1989,7 @@ impl<T: Decode> WellKnownKey<T> {
 	/// Gets the value or `None` if it does not exist or decoding failed.
 	pub fn get(&self) -> Option<T> {
 		sp_io::storage::get(&self.key)
-			.and_then(|raw| parity_scale_codec::DecodeAll::decode_all(&mut raw.as_ref()).ok())
+			.and_then(|raw| codec::DecodeAll::decode_all(&mut raw.as_ref()).ok())
 	}
 }
 
@@ -2013,6 +2027,7 @@ pub mod node_features {
 	/// A feature index used to identify a bit into the node_features array stored
 	/// in the HostConfiguration.
 	#[repr(u8)]
+	#[derive(Clone, Copy)]
 	pub enum FeatureIndex {
 		/// Tells if tranch0 assignments could be sent in a single certificate.
 		/// Reserved for: `<https://github.com/paritytech/polkadot-sdk/issues/628>`
@@ -2021,10 +2036,16 @@ pub mod node_features {
 		/// The value stored there represents the assumed core index where the candidates
 		/// are backed. This is needed for the elastic scaling MVP.
 		ElasticScalingMVP = 1,
+		/// Tells if the chunk mapping feature is enabled.
+		/// Enables the implementation of
+		/// [RFC-47](https://github.com/polkadot-fellows/RFCs/blob/main/text/0047-assignment-of-availability-chunks.md).
+		/// Must not be enabled unless all validators and collators have stopped using `req_chunk`
+		/// protocol version 1. If it is enabled, validators can start systematic chunk recovery.
+		AvailabilityChunkMapping = 2,
 		/// First unassigned feature bit.
 		/// Every time a new feature flag is assigned it should take this value.
 		/// and this should be incremented.
-		FirstUnassigned = 2,
+		FirstUnassigned = 3,
 	}
 }
 
@@ -2032,7 +2053,7 @@ pub mod node_features {
 mod tests {
 	use super::*;
 	use bitvec::bitvec;
-	use primitives::sr25519;
+	use sp_core::sr25519;
 
 	pub fn dummy_committed_candidate_receipt() -> CommittedCandidateReceipt {
 		let zeros = Hash::zero();

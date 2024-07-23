@@ -79,9 +79,9 @@ pub trait Metadata<AccountId>: metadata::Inspect<AccountId> {
 	fn system_token_metadata(
 		asset: &Self::AssetId,
 	) -> Result<RemoteAssetMetadata<Self::AssetId, Self::Balance>, DispatchError> {
-		let name = Self::name(asset);
-		let symbol = Self::symbol(asset);
-		let decimals = Self::decimals(asset);
+		let name = Self::name(asset.clone());
+		let symbol = Self::symbol(asset.clone());
+		let decimals = Self::decimals(asset.clone());
 		let (min_balance, currency_type) = Self::inner(asset)?;
 		Ok(RemoteAssetMetadata {
 			asset_id: asset.clone(),
