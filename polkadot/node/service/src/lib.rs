@@ -753,9 +753,7 @@ pub fn new_full<
 	} else {
 		let mut backoff = sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default();
 
-		if config.chain_spec.is_yosemite() ||
-			config.chain_spec.is_dev()
-		{
+		if config.chain_spec.is_yosemite() || config.chain_spec.is_dev() {
 			// on testnets that are in flux (like rococo or versi), finality has stalled
 			// sometimes due to operational issues and it's annoying to slow down block
 			// production to 1 block per hour.
@@ -1402,8 +1400,7 @@ pub fn new_chain_ops(
 {
 	config.keystore = sc_service::config::KeystoreConfig::InMemory;
 
-	if config.chain_spec.is_yosemite()
-	{
+	if config.chain_spec.is_yosemite() {
 		chain_ops!(config, jaeger_agent, None)
 	} else if config.chain_spec.is_kusama() {
 		chain_ops!(config, jaeger_agent, None)

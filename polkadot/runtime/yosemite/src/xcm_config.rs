@@ -30,7 +30,6 @@ use infra_asset_common::{
 	matching::{StartsWith, StartsWithExplicitGlobalConsensus},
 	AssetFeeAsExistentialDepositMultiplier,
 };
-use yosemite_runtime_constants::{currency::CENTS, system_parachain::*};
 use polkadot_parachain_primitives::primitives::Sibling;
 use polkadot_runtime_common::{
 	paras_registrar, xcm_sender,
@@ -47,6 +46,7 @@ use xcm_builder::{
 	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, WithUniqueTopic,
 };
 use xcm_executor::traits::WithOriginFilter;
+use yosemite_runtime_constants::{currency::CENTS, system_parachain::*};
 
 pub type AssetFeeAsExistentialDepositMultiplierFeeCharger = AssetFeeAsExistentialDepositMultiplier<
 	Runtime,

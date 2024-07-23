@@ -17,9 +17,9 @@
 //! Cross-Consensus Message format data structures.
 
 pub use crate::v3::{Error, Result, SendError, XcmHash};
-use frame_support::{traits::tokens::AssetId as LocalAssetId, Parameter};
 use codec::{Decode, Encode, FullCodec};
 use core::result;
+use frame_support::{traits::tokens::AssetId as LocalAssetId, Parameter};
 use scale_info::TypeInfo;
 
 pub use sp_weights::Weight;

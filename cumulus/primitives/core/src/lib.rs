@@ -34,8 +34,8 @@ pub use polkadot_primitives::{
 };
 
 pub use sp_runtime::{
-	infra::SystemConfig,
 	generic::{Digest, DigestItem},
+	infra::SystemConfig,
 	traits::Block as BlockT,
 	ConsensusEngineId,
 };

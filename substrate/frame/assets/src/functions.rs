@@ -65,7 +65,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 	pub(super) fn new_account(
 		who: &T::AccountId,
-		d: &mut AssetDetails<T::Balance, T::AccountId, DepositBalanceOf<T, I>, T::SystemTokenWeight>,
+		d: &mut AssetDetails<
+			T::Balance,
+			T::AccountId,
+			DepositBalanceOf<T, I>,
+			T::SystemTokenWeight,
+		>,
 		maybe_deposit: Option<(&T::AccountId, DepositBalanceOf<T, I>)>,
 	) -> Result<ExistenceReasonOf<T, I>, DispatchError> {
 		let accounts = d.accounts.checked_add(1).ok_or(ArithmeticError::Overflow)?;
@@ -96,7 +101,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 	pub(super) fn dead_account(
 		who: &T::AccountId,
-		d: &mut AssetDetails<T::Balance, T::AccountId, DepositBalanceOf<T, I>, T::SystemTokenWeight>,
+		d: &mut AssetDetails<
+			T::Balance,
+			T::AccountId,
+			DepositBalanceOf<T, I>,
+			T::SystemTokenWeight,
+		>,
 		reason: &ExistenceReasonOf<T, I>,
 		force: bool,
 	) -> DeadConsequence {
@@ -442,7 +452,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		beneficiary: &T::AccountId,
 		amount: T::Balance,
 		check: impl FnOnce(
-			&mut AssetDetails<T::Balance, T::AccountId, DepositBalanceOf<T, I>, T::SystemTokenWeight>,
+			&mut AssetDetails<
+				T::Balance,
+				T::AccountId,
+				DepositBalanceOf<T, I>,
+				T::SystemTokenWeight,
+			>,
 		) -> DispatchResult,
 	) -> DispatchResult {
 		if amount.is_zero() {
@@ -529,7 +544,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		f: DebitFlags,
 		check: impl FnOnce(
 			T::Balance,
-			&mut AssetDetails<T::Balance, T::AccountId, DepositBalanceOf<T, I>, T::SystemTokenWeight>,
+			&mut AssetDetails<
+				T::Balance,
+				T::AccountId,
+				DepositBalanceOf<T, I>,
+				T::SystemTokenWeight,
+			>,
 		) -> DispatchResult,
 	) -> Result<T::Balance, DispatchError> {
 		if amount.is_zero() {
@@ -1155,7 +1175,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			let issuer = asset_detail.clone().issuer;
 			let min_balance = asset_detail.min_balance;
 			// TODO: Better way
-			ensure!(Self::balance(asset_id.clone(), issuer) >= min_balance, Error::<T, I>::InvalidRequest);
+			ensure!(
+				Self::balance(asset_id.clone(), issuer) >= min_balance,
+				Error::<T, I>::InvalidRequest
+			);
 			asset_detail.status = AssetStatus::Requested;
 			asset_detail.currency_type = Some(currency_type);
 			*maybe_detail = Some(asset_detail);

@@ -21,14 +21,14 @@
 #![recursion_limit = "512"]
 
 use polkadot_runtime_common::{
-	auctions, crowdloan, impl_runtime_weights, paras_registrar, ToAuthor,
-	paras_sudo_wrapper, prod_or_fast, slots, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+	auctions, crowdloan, impl_runtime_weights, paras_registrar, paras_sudo_wrapper, prod_or_fast,
+	slots, BlockHashCount, BlockLength, SlowAdjustingFeeUpdate, ToAuthor,
 };
 
 use polkadot_runtime_parachains::{
 	assigner_coretime as parachains_assigner_coretime,
 	assigner_on_demand as parachains_assigner_on_demand, configuration as parachains_configuration,
-	configuration::{ParaConfigInterface, ActiveConfigHrmpChannelSizeAndCapacityRatio},
+	configuration::{ActiveConfigHrmpChannelSizeAndCapacityRatio, ParaConfigInterface},
 	coretime, disputes as parachains_disputes,
 	disputes::slashing as parachains_slashing,
 	dmp as parachains_dmp, hrmp as parachains_hrmp, inclusion as parachains_inclusion,
@@ -43,7 +43,7 @@ use polkadot_runtime_parachains::{
 	system_token_manager::{OracleInterface, SystemTokenInterface},
 };
 
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, derive_impl,
 	genesis_builder_helper::{build_state, get_preset},
@@ -55,8 +55,8 @@ use frame_support::{
 			Preservation::Preserve,
 		},
 		AsEnsureOriginWithArg, ConstU128, ConstU32, Contains, EitherOf, EitherOfDiverse,
-		EverythingBut, InstanceFilter, KeyOwnerProofSystem, LockIdentifier, PrivilegeCmp,
-		ProcessMessage, ProcessMessageError, Get,
+		EverythingBut, Get, InstanceFilter, KeyOwnerProofSystem, LockIdentifier, PrivilegeCmp,
+		ProcessMessage, ProcessMessageError,
 	},
 	weights::{ConstantMultiplier, WeightMeter},
 	PalletId,
@@ -67,17 +67,17 @@ use pallet_identity::legacy::IdentityInfo;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as session_historical;
 use pallet_system_token_tx_payment::{HandleCredit, RewardOriginInfo, TransactionFeeCharger};
-use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo, FungibleAdapter};
+use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
 use pallet_validator_management::{RewardInterface, SessionIndex};
-use codec::{Decode, Encode, MaxEncodedLen};
 use polkadot_primitives::{
-	slashing, CoreIndex, AccountId, AccountIndex, ApprovalVotingParams, Balance, BlockNumber, CandidateEvent,
-	CandidateHash, CommittedCandidateReceipt, CoreState, DisputeState, ExecutorParams,
+	slashing, AccountId, AccountIndex, ApprovalVotingParams, Balance, BlockNumber, CandidateEvent,
+	CandidateHash, CommittedCandidateReceipt, CoreIndex, CoreState, DisputeState, ExecutorParams,
 	GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
 	NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes,
 	SessionInfo, Signature, ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex,
 	PARACHAIN_KEY_TYPE_ID,
 };
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::OpaqueMetadata;
 use sp_mmr_primitives as mmr;
 use sp_runtime::{
@@ -91,13 +91,17 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill,
 };
 
-use sp_std::{cmp::Ordering, collections::{btree_map::BTreeMap, vec_deque::VecDeque}, prelude::*};
+use sp_genesis_builder::PresetId;
+use sp_std::{
+	cmp::Ordering,
+	collections::{btree_map::BTreeMap, vec_deque::VecDeque},
+	prelude::*,
+};
 #[cfg(any(feature = "std", test))]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use sp_genesis_builder::PresetId;
 use static_assertions::const_assert;
-use xcm::latest::{Junction, Location, Reanchorable, InteriorLocation};
+use xcm::latest::{InteriorLocation, Junction, Location, Reanchorable};
 
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
@@ -110,7 +114,7 @@ pub use sp_runtime::BuildStorage;
 use yosemite_runtime_constants::{
 	currency::*,
 	fee::*,
-	system_parachain::{ASSET_HUB_ID, BROKER_ID, coretime::TIMESLICE_PERIOD},
+	system_parachain::{coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID},
 	time::*,
 };
 
@@ -367,25 +371,25 @@ impl frame_support::traits::Contains<RuntimeCall> for BootstrapCallFilter {
 	fn contains(call: &RuntimeCall) -> bool {
 		match call {
 			RuntimeCall::Council(
-				pallet_collective::Call::propose { .. }
-				| pallet_collective::Call::vote { .. }
-				| pallet_collective::Call::close { .. },
-			)
-			| RuntimeCall::Democracy(pallet_democracy::Call::external_propose_majority {
+				pallet_collective::Call::propose { .. } |
+				pallet_collective::Call::vote { .. } |
+				pallet_collective::Call::close { .. },
+			) |
+			RuntimeCall::Democracy(pallet_democracy::Call::external_propose_majority {
 				..
-			})
-			| RuntimeCall::Preimage(pallet_preimage::Call::note_preimage { .. })
-			| RuntimeCall::Assets(
+			}) |
+			RuntimeCall::Preimage(pallet_preimage::Call::note_preimage { .. }) |
+			RuntimeCall::Assets(
 				NativeAssetsCall::create { .. } | NativeAssetsCall::mint { .. },
-			)
-			| RuntimeCall::Configuration(
-				parachains_configuration::Call::end_bootstrap { .. }
-				| parachains_configuration::Call::set_admin { .. }
-				| parachains_configuration::Call::update_para_fee_rate { .. }
-				| parachains_configuration::Call::update_fee_table { .. }
-				| parachains_configuration::Call::update_runtime_state { .. },
-			)
-			| RuntimeCall::Sudo(..) => true,
+			) |
+			RuntimeCall::Configuration(
+				parachains_configuration::Call::end_bootstrap { .. } |
+				parachains_configuration::Call::set_admin { .. } |
+				parachains_configuration::Call::update_para_fee_rate { .. } |
+				parachains_configuration::Call::update_fee_table { .. } |
+				parachains_configuration::Call::update_runtime_state { .. },
+			) |
+			RuntimeCall::Sudo(..) => true,
 			_ => false,
 		}
 	}
@@ -1046,32 +1050,31 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Slots(..) |
 				RuntimeCall::Auctions(..) // Specifically omitting the entire XCM Pallet
 			),
-			ProxyType::Governance => matches!(
-				c,
-				RuntimeCall::Democracy(..)
-					| RuntimeCall::Council(..)
-					| RuntimeCall::TechnicalCommittee(..)
-					| RuntimeCall::PhragmenElection(..)
-					| RuntimeCall::Treasury(..)
-					| RuntimeCall::Bounties(..)
-					| RuntimeCall::Tips(..)
-					| RuntimeCall::Utility(..)
-					| RuntimeCall::ChildBounties(..)
-			),
+			ProxyType::Governance =>
+				matches!(
+					c,
+					RuntimeCall::Democracy(..) |
+						RuntimeCall::Council(..) | RuntimeCall::TechnicalCommittee(..) |
+						RuntimeCall::PhragmenElection(..) |
+						RuntimeCall::Treasury(..) |
+						RuntimeCall::Bounties(..) |
+						RuntimeCall::Tips(..) | RuntimeCall::Utility(..) |
+						RuntimeCall::ChildBounties(..)
+				),
 			ProxyType::IdentityJudgement => matches!(
 				c,
-				RuntimeCall::Identity(pallet_identity::Call::provide_judgement { .. })
-					| RuntimeCall::Utility(..)
+				RuntimeCall::Identity(pallet_identity::Call::provide_judgement { .. }) |
+					RuntimeCall::Utility(..)
 			),
 			ProxyType::CancelProxy => {
 				matches!(c, RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. }))
 			},
 			ProxyType::Auction => matches!(
 				c,
-				RuntimeCall::Auctions(..)
-					| RuntimeCall::Crowdloan(..)
-					| RuntimeCall::Registrar(..)
-					| RuntimeCall::Slots(..)
+				RuntimeCall::Auctions(..) |
+					RuntimeCall::Crowdloan(..) |
+					RuntimeCall::Registrar(..) |
+					RuntimeCall::Slots(..)
 			),
 		}
 	}

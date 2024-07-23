@@ -16,7 +16,7 @@
 
 //! Client side code for generating the parachain inherent.
 
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use cumulus_primitives_core::{
 	relay_chain::{self, Hash as PHash, HrmpChannelId},
 	ParaId, PersistedValidationData,

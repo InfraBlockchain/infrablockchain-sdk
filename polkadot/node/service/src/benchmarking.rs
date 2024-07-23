@@ -171,8 +171,8 @@ fn yosemite_sign_call(
 	acc: sp_core::sr25519::Pair,
 ) -> OpaqueExtrinsic {
 	use codec::Encode;
-	use yosemite_runtime as runtime;
 	use sp_core::Pair;
+	use yosemite_runtime as runtime;
 
 	let extra: runtime::SignedExtra = (
 		frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),

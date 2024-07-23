@@ -17,20 +17,24 @@
 //! Genesis configs presets for the Rococo runtime
 
 use crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG};
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use polkadot_primitives::{
-	vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId, ValidatorId, SystemConfig as InfraSystemConfig,
+	vstaging::SchedulerParams, AccountId, AccountPublic, AssignmentId,
+	SystemConfig as InfraSystemConfig, ValidatorId,
 };
-use yosemite_runtime_constants::currency::DOLLARS;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sp_core::{sr25519, Pair, Public};
-use sp_runtime::{traits::IdentifyAccount, infra::{BaseSystemTokenDetail, Fiat}};
+use sp_runtime::{
+	infra::{BaseSystemTokenDetail, Fiat},
+	traits::IdentifyAccount,
+};
 #[cfg(not(feature = "std"))]
 use sp_std::alloc::format;
 use sp_std::vec::Vec;
+use yosemite_runtime_constants::currency::DOLLARS;
 
 /// Helper function to generate a crypto pair from seed
 fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -115,13 +119,7 @@ fn rococo_session_keys(
 	para_assignment: AssignmentId,
 	authority_discovery: AuthorityDiscoveryId,
 ) -> SessionKeys {
-	SessionKeys { babe,
-		grandpa,
-		im_online,
-		para_validator,
-		para_assignment,
-		authority_discovery,
-	}
+	SessionKeys { babe, grandpa, im_online, para_validator, para_assignment, authority_discovery }
 }
 
 fn default_parachains_host_configuration(
@@ -206,53 +204,53 @@ fn rococo_testnet_genesis(
 	root_key: AccountId,
 	endowed_accounts: Option<Vec<AccountId>>,
 ) -> serde_json::Value {
-	use pallet_validator_management::{Pool, Forcing};
+	use pallet_validator_management::{Forcing, Pool};
 	let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
 
 	const ENDOWMENT: u128 = 1_000_000 * DOLLARS;
 
 	serde_json::json!({
-		"balances": {
-			 "balances": endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>()
-		 },
-		 "session": {
-		   "keys": initial_authorities
-					 .iter()
-					 .map(|x| {
-						 (
-							 x.0.clone(),
-							 x.0.clone(),
-							 rococo_session_keys(
-								 x.2.clone(),
-								 x.3.clone(),
-								 x.4.clone(),
-								 x.5.clone(),
-								 x.6.clone(),
-								 x.7.clone(),
-							 ),
-						 )
-					 })
-					 .collect::<Vec<_>>()
-		 },
-		 "sudo": {
-		   "key": Some(root_key)
-		 },
-		 "babe": {
-			 "epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
-		 },
-		 "configuration": {
-			 "config": default_parachains_host_configuration(),
-			 "systemConfig": default_infra_relay_system_configuration(),
-		 },
-		 "validatorManagement": {
-		   "seedTrustValidators": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
-			 "totalValidatorSlots": 6,
-			 "seedTrustSlots": 6,
-			 "forceEra": Forcing::NotForcing,
-			 "poolStatus": Pool::SeedTrust,
-			 "isPotEnableAtGenesis": false,
-		 }
-	 })
+	   "balances": {
+			"balances": endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>()
+		},
+		"session": {
+		  "keys": initial_authorities
+					.iter()
+					.map(|x| {
+						(
+							x.0.clone(),
+							x.0.clone(),
+							rococo_session_keys(
+								x.2.clone(),
+								x.3.clone(),
+								x.4.clone(),
+								x.5.clone(),
+								x.6.clone(),
+								x.7.clone(),
+							),
+						)
+					})
+					.collect::<Vec<_>>()
+		},
+		"sudo": {
+		  "key": Some(root_key)
+		},
+		"babe": {
+			"epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
+		},
+		"configuration": {
+			"config": default_parachains_host_configuration(),
+			"systemConfig": default_infra_relay_system_configuration(),
+		},
+		"validatorManagement": {
+		  "seedTrustValidators": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+			"totalValidatorSlots": 6,
+			"seedTrustSlots": 6,
+			"forceEra": Forcing::NotForcing,
+			"poolStatus": Pool::SeedTrust,
+			"isPotEnableAtGenesis": false,
+		}
+	})
 }
 
 //development

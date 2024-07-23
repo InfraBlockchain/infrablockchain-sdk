@@ -183,7 +183,7 @@ use frame_support::{
 	pallet_prelude::DispatchResultWithPostInfo,
 	storage::KeyPrefixIterator,
 	traits::{
-		tokens::{fungibles, DepositConsequence, WithdrawConsequence, Balance},
+		tokens::{fungibles, Balance, DepositConsequence, WithdrawConsequence},
 		BalanceStatus::Reserved,
 		Currency, EnsureOriginWithArg, Incrementable, ReservableCurrency, StoredMap,
 	},

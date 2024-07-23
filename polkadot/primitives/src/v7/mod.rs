@@ -30,7 +30,10 @@ use sp_application_crypto::KeyTypeId;
 use sp_arithmetic::traits::{BaseArithmetic, Saturating};
 use sp_core::RuntimeDebug;
 use sp_inherents::InherentIdentifier;
-pub use sp_runtime::{traits::{AppVerify, Header as HeaderT}, infra::SystemConfig};
+pub use sp_runtime::{
+	infra::SystemConfig,
+	traits::{AppVerify, Header as HeaderT},
+};
 
 pub use sp_runtime::traits::{BlakeTwo256, Hash as HashT};
 
@@ -38,13 +41,14 @@ pub use sp_runtime::traits::{BlakeTwo256, Hash as HashT};
 pub use polkadot_core_primitives::v2::{
 	AccountId, AccountIndex, AccountPublic, Balance, Block, BlockId, BlockNumber, CandidateHash,
 	ChainId, DownwardMessage, Hash, Header, InboundDownwardMessage, InboundHrmpMessage, Moment,
-	Nonce, OutboundHrmpMessage, Remark, Signature, UncheckedExtrinsic, OpaquePoT, OpaqueRemoteAssetMetadata,
+	Nonce, OpaquePoT, OpaqueRemoteAssetMetadata, OutboundHrmpMessage, Remark, Signature,
+	UncheckedExtrinsic,
 };
 
 // Export some polkadot-parachain primitives
 pub use polkadot_parachain_primitives::primitives::{
-	HeadData, HorizontalMessages, HrmpChannelId, Id, UpwardMessage, UpwardMessages, ValidationCode,
-	ValidationCodeHash, LOWEST_PUBLIC_ID, PoTs
+	HeadData, HorizontalMessages, HrmpChannelId, Id, PoTs, UpwardMessage, UpwardMessages,
+	ValidationCode, ValidationCodeHash, LOWEST_PUBLIC_ID,
 };
 
 use serde::{Deserialize, Serialize};

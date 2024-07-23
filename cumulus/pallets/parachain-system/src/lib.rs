@@ -30,9 +30,9 @@
 use codec::{Decode, Encode};
 use cumulus_primitives_core::{
 	relay_chain, AbridgedHostConfiguration, ChannelInfo, ChannelStatus, CollationInfo,
-	GetChannelInfo, InboundDownwardMessage, InboundHrmpMessage, ListChannelInfos, Location, MessageSendError,
-	OutboundHrmpMessage, ParaId, PersistedValidationData, UpwardMessage, UpdateRCConfig, UpwardMessageSender,
-	XcmpMessageHandler, XcmpMessageSource,
+	GetChannelInfo, InboundDownwardMessage, InboundHrmpMessage, ListChannelInfos, Location,
+	MessageSendError, OutboundHrmpMessage, ParaId, PersistedValidationData, UpdateRCConfig,
+	UpwardMessage, UpwardMessageSender, XcmpMessageHandler, XcmpMessageSource,
 };
 use cumulus_primitives_parachain_inherent::{MessageQueueChain, ParachainInherentData};
 use frame_support::{
@@ -48,8 +48,8 @@ use polkadot_parachain_primitives::primitives::RelayChainBlockNumber;
 use polkadot_runtime_parachains::FeeTracker;
 use scale_info::TypeInfo;
 use sp_runtime::{
-	traits::{Block as BlockT, BlockNumberProvider, Hash},
 	infra::{SystemTokenWeight, TaaV},
+	traits::{Block as BlockT, BlockNumberProvider, Hash},
 	transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidity, ValidTransaction,
 	},
@@ -916,7 +916,7 @@ pub mod pallet {
 	/// See `Pallet::set_custom_validation_head_data` for more information.
 	#[pallet::storage]
 	pub type CustomValidationHeadData<T: Config> = StorageValue<_, Vec<u8>, OptionQuery>;
-	
+
 	/// The vote weight of a specific account for a specific asset.
 	#[pallet::storage]
 	pub(super) type ProofOfTransaction<T: Config> = StorageValue<_, Vec<relay_chain::OpaquePoT>>;

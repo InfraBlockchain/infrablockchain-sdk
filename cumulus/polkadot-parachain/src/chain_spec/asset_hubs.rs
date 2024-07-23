@@ -57,7 +57,8 @@ fn asset_hub_yosemite_like_development_config(
 	para_id: u32,
 ) -> GenericChainSpec {
 	GenericChainSpec::builder(
-		asset_hub_yosemite_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
+		asset_hub_yosemite_runtime::WASM_BINARY
+			.expect("WASM binary was not built, please build it!"),
 		Extensions { relay_chain: "yosemite-dev".into(), para_id },
 	)
 	.with_name(name)
@@ -105,7 +106,8 @@ fn asset_hub_yosemite_like_local_config(
 	para_id: u32,
 ) -> GenericChainSpec {
 	GenericChainSpec::builder(
-		asset_hub_yosemite_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
+		asset_hub_yosemite_runtime::WASM_BINARY
+			.expect("WASM binary was not built, please build it!"),
 		Extensions { relay_chain: "yosemite-local".into(), para_id },
 	)
 	.with_name(name)
@@ -152,7 +154,8 @@ pub fn asset_hub_yosemite_genesis_config() -> GenericChainSpec {
 	properties.insert("tokenDecimals".into(), 12.into());
 	let para_id = 1000;
 	GenericChainSpec::builder(
-		asset_hub_yosemite_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
+		asset_hub_yosemite_runtime::WASM_BINARY
+			.expect("WASM binary was not built, please build it!"),
 		Extensions { relay_chain: "yosemite".into(), para_id },
 	)
 	.with_name("Yosemite Asset Hub")
@@ -233,7 +236,7 @@ fn asset_hub_yosemite_genesis(
 				.collect(),
 		},
 		"infraXcm": asset_hub_yosemite_runtime::InfraXcmConfig {
-  			safe_xcm_version: Some(SAFE_XCM_VERSION),
+			  safe_xcm_version: Some(SAFE_XCM_VERSION),
 			..Default::default()
 		},
 		"sudo": asset_hub_yosemite_runtime::SudoConfig { key: root_key }

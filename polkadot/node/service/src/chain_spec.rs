@@ -22,8 +22,6 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
 
-#[cfg(feature = "yosemite-native")]
-use yosemite_runtime as yosemite;
 use sc_chain_spec::ChainSpecExtension;
 #[cfg(any(feature = "yosemite-native"))]
 use sc_chain_spec::ChainType;
@@ -32,6 +30,8 @@ use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
+#[cfg(feature = "yosemite-native")]
+use yosemite_runtime as yosemite;
 
 #[cfg(feature = "yosemite-native")]
 const YOSEMITE_STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
