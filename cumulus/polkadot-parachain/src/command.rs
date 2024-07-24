@@ -44,7 +44,7 @@ enum Runtime {
 	#[default]
 	Default,
 	#[cfg(feature = "infra-parachain")]
-	AssetHubYosemite
+	AssetHubYosemite,
 }
 
 trait RuntimeResolver {
@@ -95,8 +95,7 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 		"asset-hub-yosemite-dev" =>
 			Box::new(chain_spec::asset_hubs::asset_hub_yosemite_development_config()),
 		#[cfg(feature = "infra-parachain")]
-		"asset-hub-yosemite-local" =>
-			Box::new(chain_spec::asset_hubs::asset_hub_yosemite_local_config()),
+		"asset-hub-yosemite-local" => Box::new(chain_spec::asset_hubs::asset_hub_yosemite_local_config()),
 		// the chain spec as used for generating the upgrade genesis values
 		#[cfg(feature = "infra-parachain")]
 		"asset-hub-yosemite-genesis" =>
@@ -487,31 +486,26 @@ async fn start_node<Network: sc_network::NetworkBackend<Block, Hash>>(
 	hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<sc_service::TaskManager> {
 	match config.chain_spec.runtime()? {
-
 		#[cfg(feature = "infra-parachain")]
-		Runtime::AssetHubYosemite =>
-			crate::service::start_asset_hub_lookahead_node::<RuntimeApi, AuraId, Network>(
-				config,
-				polkadot_config,
-				collator_options,
-				id,
-				hwbench,
-			)
-			.await
-			.map(|r| r.0)
-			.map_err(Into::into),
+		Runtime::AssetHubYosemite => crate::service::start_asset_hub_lookahead_node::<
+			RuntimeApi,
+			AuraId,
+			Network,
+		>(config, polkadot_config, collator_options, id, hwbench)
+		.await
+		.map(|r| r.0)
+		.map_err(Into::into),
 
-		Runtime::Default =>
-			crate::service::start_rococo_parachain_node::<Network>(
-				config,
-				polkadot_config,
-				collator_options,
-				id,
-				hwbench,
-			)
-			.await
-			.map(|r| r.0)
-			.map_err(Into::into),
+		Runtime::Default => crate::service::start_rococo_parachain_node::<Network>(
+			config,
+			polkadot_config,
+			collator_options,
+			id,
+			hwbench,
+		)
+		.await
+		.map(|r| r.0)
+		.map_err(Into::into),
 	}
 }
 

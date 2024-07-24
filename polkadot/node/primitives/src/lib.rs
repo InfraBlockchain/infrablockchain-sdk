@@ -32,8 +32,8 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use polkadot_primitives::{
 	BlakeTwo256, BlockNumber, CandidateCommitments, CandidateHash, ChunkIndex, CollatorPair,
 	CommittedCandidateReceipt, CompactStatement, CoreIndex, EncodeAs, Hash, HashT, HeadData,
-	Id as ParaId, PersistedValidationData, OpaqueRemoteAssetMetadata, SessionIndex, Signed, UncheckedSigned, ValidationCode,
-	ValidationCodeHash, MAX_CODE_SIZE, MAX_POV_SIZE,
+	Id as ParaId, OpaqueRemoteAssetMetadata, PersistedValidationData, SessionIndex, Signed,
+	UncheckedSigned, ValidationCode, ValidationCodeHash, MAX_CODE_SIZE, MAX_POV_SIZE,
 };
 pub use sp_consensus_babe::{
 	AllowedSlots as BabeAllowedSlots, BabeEpochConfiguration, Epoch as BabeEpoch,
@@ -41,7 +41,7 @@ pub use sp_consensus_babe::{
 };
 
 pub use polkadot_parachain_primitives::primitives::{
-	BlockData, HorizontalMessages, UpwardMessages, PoTs,
+	BlockData, HorizontalMessages, PoTs, UpwardMessages,
 };
 
 pub mod approval;

@@ -29,7 +29,8 @@ use frame_support::traits::{
 };
 use xcm::prelude::Location;
 use xcm_builder::{
-	AsPrefixedGeneralIndex, CreateMatcher, MatchXcm, MatchedConvertedConcreteId, WithLatestLocationConverter
+	AsPrefixedGeneralIndex, CreateMatcher, MatchXcm, MatchedConvertedConcreteId,
+	WithLatestLocationConverter,
 };
 use xcm_executor::traits::{JustTry, Properties};
 
@@ -271,7 +272,13 @@ pub type MultiLocationForAssetId = Location;
 
 /// [`MatchedConvertedConcreteId`] converter dedicated for storing `AssetId` as `Location`.
 pub type LocationConvertedConcreteId<LocationFilter, ConvertLocationTarget, Balance> =
-	MatchedConvertedConcreteId<Location, Balance, LocationFilter, WithLatestLocationConverter<ConvertLocationTarget>, JustTry>;
+	MatchedConvertedConcreteId<
+		Location,
+		Balance,
+		LocationFilter,
+		WithLatestLocationConverter<ConvertLocationTarget>,
+		JustTry,
+	>;
 
 /// [`MatchedConvertedConcreteId`] converter dedicated for storing `ForeignAssets` with `AssetId` as
 /// `Location`.
@@ -281,27 +288,37 @@ pub type LocationConvertedConcreteId<LocationFilter, ConvertLocationTarget, Bala
 /// - all local Locations
 ///
 /// `AdditionalLocationExclusionFilter` can customize additional excluded Locations
-pub type ForeignAssetsConvertedConcreteId<AdditionalLocationExclusionFilter, ConvertLocationTarget, Balance> =
-	LocationConvertedConcreteId<
-		EverythingBut<(
-			// Excludes relay/parent chain currency
-			Equals<ParentLocation>,
-			// Here we rely on fact that something like this works:
-			// assert!(Location::new(1,
-			// [Parachain(100)]).starts_with(&Location::parent()));
-			// assert!([Parachain(100)].into().starts_with(&Here));
-			StartsWith<LocalLocationPattern>,
-			// Here we can exclude more stuff or leave it as `()`
-			AdditionalLocationExclusionFilter,
-		)>,
-		ConvertLocationTarget,
-		Balance,
-	>;
+pub type ForeignAssetsConvertedConcreteId<
+	AdditionalLocationExclusionFilter,
+	ConvertLocationTarget,
+	Balance,
+> = LocationConvertedConcreteId<
+	EverythingBut<(
+		// Excludes relay/parent chain currency
+		Equals<ParentLocation>,
+		// Here we rely on fact that something like this works:
+		// assert!(Location::new(1,
+		// [Parachain(100)]).starts_with(&Location::parent()));
+		// assert!([Parachain(100)].into().starts_with(&Here));
+		StartsWith<LocalLocationPattern>,
+		// Here we can exclude more stuff or leave it as `()`
+		AdditionalLocationExclusionFilter,
+	)>,
+	ConvertLocationTarget,
+	Balance,
+>;
 
 /// For Relay
 /// `AdditionalLocationExclusionFilter` can customize additional excluded Locations
-pub type ForeignAssetsConvertedConcreteIdForParent<AdditionalLocationExclusionFilter, ConvertLocationTarget, Balance> =
-	LocationConvertedConcreteId<EverythingBut<AdditionalLocationExclusionFilter>, ConvertLocationTarget, Balance>;
+pub type ForeignAssetsConvertedConcreteIdForParent<
+	AdditionalLocationExclusionFilter,
+	ConvertLocationTarget,
+	Balance,
+> = LocationConvertedConcreteId<
+	EverythingBut<AdditionalLocationExclusionFilter>,
+	ConvertLocationTarget,
+	Balance,
+>;
 
 #[cfg(test)]
 mod tests {

@@ -47,7 +47,7 @@ pub use junctions::Junctions;
 pub use location::{Ancestor, AncestorThen, InteriorLocation, Location, Parent, ParentThen};
 pub use traits::{
 	send_xcm, validate_send, Error, ExecuteXcm, Outcome, PreparedMessage, Reanchorable, Result,
-	SendError, SendResult, SendXcm, Weight, XcmHash, SystemTokenId,
+	SendError, SendResult, SendXcm, SystemTokenId, Weight, XcmHash,
 };
 // These parts of XCM v3 are unchanged in XCM v4, and are re-imported here.
 pub use super::v3::{MaybeErrorCode, OriginKind, WeightLimit};

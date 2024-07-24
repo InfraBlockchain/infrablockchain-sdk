@@ -31,7 +31,7 @@ use polkadot_primitives::{
 	MAX_POV_SIZE, ON_DEMAND_MAX_QUEUE_MAX_SIZE,
 };
 use sp_arithmetic::traits::AtLeast32BitUnsigned;
-use sp_runtime::{traits::Zero, Perbill, Percent, infra::*};
+use sp_runtime::{infra::*, traits::Zero, Perbill, Percent};
 use sp_std::prelude::*;
 
 type SystemTokenBalanceOf<T> = <<T as Config>::ParaConfigHandler as ParaConfigInterface>::Balance;
@@ -1608,7 +1608,13 @@ impl ParaConfigInterface for () {
 	type DestId = u32;
 	type Balance = u128;
 	fn set_admin(_dest_id: Self::DestId, _who: Self::AccountId) {}
-	fn update_fee_table(_dest_id: Self::DestId, _pallet_name: Vec<u8>, _call_name: Vec<u8>, _fee: Self::Balance) {}
+	fn update_fee_table(
+		_dest_id: Self::DestId,
+		_pallet_name: Vec<u8>,
+		_call_name: Vec<u8>,
+		_fee: Self::Balance,
+	) {
+	}
 	fn update_para_fee_rate(_dest_id: Self::DestId, _fee_rate: Self::Balance) {}
 	fn update_runtime_state(_dest_id: Self::DestId) {}
 }

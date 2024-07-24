@@ -30,7 +30,10 @@ use sp_application_crypto::KeyTypeId;
 use sp_arithmetic::traits::{BaseArithmetic, Saturating};
 use sp_core::RuntimeDebug;
 use sp_inherents::InherentIdentifier;
-pub use sp_runtime::{traits::{AppVerify, Header as HeaderT}, infra::SystemConfig};
+pub use sp_runtime::{
+	infra::SystemConfig,
+	traits::{AppVerify, Header as HeaderT},
+};
 
 pub use sp_runtime::traits::{BlakeTwo256, Hash as HashT};
 
@@ -38,13 +41,14 @@ pub use sp_runtime::traits::{BlakeTwo256, Hash as HashT};
 pub use polkadot_core_primitives::v2::{
 	AccountId, AccountIndex, AccountPublic, Balance, Block, BlockId, BlockNumber, CandidateHash,
 	ChainId, DownwardMessage, Hash, Header, InboundDownwardMessage, InboundHrmpMessage, Moment,
-	Nonce, OutboundHrmpMessage, Remark, Signature, UncheckedExtrinsic, OpaquePoT, OpaqueRemoteAssetMetadata,
+	Nonce, OpaquePoT, OpaqueRemoteAssetMetadata, OutboundHrmpMessage, Remark, Signature,
+	UncheckedExtrinsic,
 };
 
 // Export some polkadot-parachain primitives
 pub use polkadot_parachain_primitives::primitives::{
-	HeadData, HorizontalMessages, HrmpChannelId, Id, UpwardMessage, UpwardMessages, ValidationCode,
-	ValidationCodeHash, LOWEST_PUBLIC_ID, PoTs
+	HeadData, HorizontalMessages, HrmpChannelId, Id, PoTs, UpwardMessage, UpwardMessages,
+	ValidationCode, ValidationCodeHash, LOWEST_PUBLIC_ID,
 };
 
 use serde::{Deserialize, Serialize};
@@ -219,11 +223,29 @@ pub mod well_known_keys {
 	pub const CURRENT_SLOT: &[u8] =
 		&hex!["1cb6f36e027abb2091cfb5110ab5087f06155b3cd9a8c9e5e9a23fd5dc13a5ed"];
 
+	/// The currently active system configuration for InfraBlockchain
+	pub const ACTIVE_SYSTEM_CONFIG: &[u8] =
+		&hex!["06de3d8a54d27e44a9d5ce189618f22d4749b1555450acbdc9c90fdcafcce80c"];
+
 	/// The currently active host configuration.
 	///
 	/// The storage entry should be accessed as an `AbridgedHostConfiguration` encoded value.
 	pub const ACTIVE_CONFIG: &[u8] =
 		&hex!["06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385"];
+
+	/// Weight needs to be updated for `para_id`
+	pub fn update_system_token_weight(para_id: Id) -> Vec<u8> {
+		let prefix = hex!["8b48ccceef96f69546d630a6a9445f25262f55aa25e8eaac78e113273688c349"];
+		para_id.using_encoded(|para_id: &[u8]| {
+			prefix
+				.as_ref()
+				.iter()
+				.chain(twox_64(para_id).iter())
+				.chain(para_id.iter())
+				.cloned()
+				.collect()
+		})
+	}
 
 	/// Hash of the committed head data for a given registered para.
 	///

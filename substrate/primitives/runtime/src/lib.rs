@@ -82,6 +82,7 @@ use sp_std::alloc::format;
 
 pub mod curve;
 pub mod generic;
+pub mod infra;
 pub mod legacy;
 mod multiaddress;
 pub mod offchain;
@@ -92,7 +93,6 @@ pub mod testing;
 pub mod traits;
 pub mod transaction_validity;
 pub mod type_with_default;
-pub mod infra;
 
 pub use crate::runtime_string::*;
 

@@ -1,6 +1,6 @@
 use super::*;
-use frame_support::traits::fungibles::Mutate;
 use codec::{Decode, Encode};
+use frame_support::traits::fungibles::Mutate;
 use xcm::{latest::prelude::*, opaque::lts::Junctions::X1};
 
 #[derive(Encode, Decode)]

@@ -30,9 +30,9 @@
 use codec::{Decode, Encode};
 use cumulus_primitives_core::{
 	relay_chain, AbridgedHostConfiguration, ChannelInfo, ChannelStatus, CollationInfo,
-	GetChannelInfo, InboundDownwardMessage, InboundHrmpMessage, ListChannelInfos, Location, MessageSendError,
-	OutboundHrmpMessage, ParaId, PersistedValidationData, UpwardMessage, UpdateRCConfig, UpwardMessageSender,
-	XcmpMessageHandler, XcmpMessageSource,
+	GetChannelInfo, InboundDownwardMessage, InboundHrmpMessage, ListChannelInfos, Location,
+	MessageSendError, OutboundHrmpMessage, ParaId, PersistedValidationData, UpdateRCConfig,
+	UpwardMessage, UpwardMessageSender, XcmpMessageHandler, XcmpMessageSource,
 };
 use cumulus_primitives_parachain_inherent::{MessageQueueChain, ParachainInherentData};
 use frame_support::{
@@ -48,8 +48,8 @@ use polkadot_parachain_primitives::primitives::RelayChainBlockNumber;
 use polkadot_runtime_parachains::FeeTracker;
 use scale_info::TypeInfo;
 use sp_runtime::{
-	traits::{Block as BlockT, BlockNumberProvider, Hash},
 	infra::{SystemTokenWeight, TaaV},
+	traits::{Block as BlockT, BlockNumberProvider, Hash},
 	transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidity, ValidTransaction,
 	},
@@ -617,6 +617,18 @@ pub mod pallet {
 			);
 			<UpgradeGoAhead<T>>::put(upgrade_go_ahead_signal);
 
+			let infra_system_config = relay_state_proof
+				.read_active_system_config()
+				.expect("Error on reading infra system config in relay chain state proof");
+			T::UpdateRCConfig::update_system_config(infra_system_config);
+			
+			let update_weights = relay_state_proof
+				.read_updated_system_token_weight()
+				.expect("Error on reading updated system token weight");
+			if let Some(assets) = update_weights {
+				T::UpdateRCConfig::update_system_token_weight_for(assets);
+			}
+
 			let host_config = relay_state_proof
 				.read_abridged_host_configuration()
 				.expect("Invalid host configuration in relay chain state proof");
@@ -916,7 +928,7 @@ pub mod pallet {
 	/// See `Pallet::set_custom_validation_head_data` for more information.
 	#[pallet::storage]
 	pub type CustomValidationHeadData<T: Config> = StorageValue<_, Vec<u8>, OptionQuery>;
-	
+
 	/// The vote weight of a specific account for a specific asset.
 	#[pallet::storage]
 	pub(super) type ProofOfTransaction<T: Config> = StorageValue<_, Vec<relay_chain::OpaquePoT>>;

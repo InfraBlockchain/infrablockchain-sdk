@@ -16,12 +16,15 @@
 
 //! XCM `Location` datatype.
 
-use super::{traits::{Reanchorable, SystemTokenId}, Junction, Junctions};
+use super::{
+	traits::{Reanchorable, SystemTokenId},
+	Junction, Junctions,
+};
 use crate::{v3::MultiLocation as OldLocation, VersionedLocation};
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::result;
-use scale_info::TypeInfo;
 use frame_support::PalletError;
+use scale_info::TypeInfo;
 
 /// A relative path between state-bearing consensus systems.
 ///
