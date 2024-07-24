@@ -133,10 +133,10 @@ pub fn yosemite_development_config() -> Result<YosemiteChainSpec, String> {
 		yosemite::WASM_BINARY.ok_or("Yosemite wasm not available")?,
 		Default::default(),
 	)
-	.with_name("Yosemite Devnet")
-	.with_id("yosemite_devnet")
+	.with_name("Yosemite Development")
+	.with_id("yosemite_development")
 	.with_chain_type(ChainType::Development)
-	.with_genesis_config_preset_name("yosemite_devnet")
+	.with_genesis_config_preset_name("yosemite_development")
 	.with_protocol_id(DEFAULT_PROTOCOL_ID)
 	.build())
 }
@@ -148,10 +148,10 @@ pub fn yosemite_local_testnet_config() -> Result<YosemiteChainSpec, String> {
 		yosemite::fast_runtime_binary::WASM_BINARY.ok_or("Yosemite wasm not available")?,
 		Default::default(),
 	)
-	.with_name("Yosemite Local Testnet")
-	.with_id("yosemite_local_testnet")
+	.with_name("Yosemite Testnet")
+	.with_id("yosemite_testnet")
 	.with_chain_type(ChainType::Local)
-	.with_genesis_config_preset_name("yosemite_local_testnet")
+	.with_genesis_config_preset_name("yosemite_testnet")
 	.with_protocol_id(DEFAULT_PROTOCOL_ID)
 	.build())
 }
@@ -166,7 +166,7 @@ pub fn yosemite_staging_testnet_config() -> Result<YosemiteChainSpec, String> {
 	.with_name("Yosemite Staging Testnet")
 	.with_id("yosemite_staging_testnet")
 	.with_chain_type(ChainType::Live)
-	.with_genesis_config_preset_name("staging_testnet")
+	.with_genesis_config_preset_name("yosemite_staging_testnet")
 	.with_telemetry_endpoints(
 		TelemetryEndpoints::new(vec![(YOSEMITE_STAGING_TELEMETRY_URL.to_string(), 0)])
 			.expect("Yosemite Staging telemetry url is valid; qed"),

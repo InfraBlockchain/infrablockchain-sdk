@@ -130,8 +130,8 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("InfraBlockchain Asset Hub"),
-	impl_name: create_runtime_str!("InfraBlockchain Asset Hub"),
+	spec_name: create_runtime_str!("asset-hub-yosemite"),
+	impl_name: create_runtime_str!("bcl-asset-hub-yosemite"),
 	authoring_version: 1,
 	spec_version: 10000,
 	impl_version: 0,
@@ -730,7 +730,7 @@ impl pallet_collator_selection::Config for Runtime {
 }
 
 parameter_types! {
-	pub const APIRequestPeriod: BlockNumber = prod_or_fast!(DAYS, 10u32);
+	pub const APIRequestPeriod: BlockNumber = DAYS;
 	pub const UnsignedPriority: TransactionPriority = TransactionPriority::max_value();
 }
 

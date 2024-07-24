@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 use cumulus_primitives_core::{
-	relay_chain, AbridgedHostConfiguration, AbridgedHrmpChannel, ParaId,
+	relay_chain, AbridgedHostConfiguration, AbridgedHrmpChannel, ParaId, Location
 };
 use scale_info::TypeInfo;
 use sp_runtime::traits::HashingFor;
@@ -84,6 +84,10 @@ pub enum Error {
 	UpgradeGoAhead(ReadEntryErr),
 	/// The upgrade restriction signal cannot be read.
 	UpgradeRestriction(ReadEntryErr),
+	/// Updated system token weight cannot be read
+	UpdateSystemTokenWeight(ReadEntryErr),
+	/// The updated infra system config cannot be read
+	UpdatedInfraSystemConfig(ReadEntryErr),
 	/// The host configuration cannot be extracted.
 	Config(ReadEntryErr),
 	/// The DMQ MQC head cannot be extracted.
@@ -274,6 +278,21 @@ impl RelayChainStateProof {
 			ingress_channels,
 			egress_channels,
 		})
+	}
+
+	pub fn read_updated_system_token_weight(
+		&self,
+	) -> Result<Option<Vec<(Location, sp_runtime::infra::SystemTokenWeight)>>, Error> {
+		read_optional_entry(
+			&self.trie_backend,
+			&relay_chain::well_known_keys::update_system_token_weight(self.para_id),
+		)
+		.map_err(Error::UpdateSystemTokenWeight)
+	}
+
+	pub fn read_active_system_config(&self) -> Result<relay_chain::SystemConfig, Error> {
+		read_entry(&self.trie_backend, relay_chain::well_known_keys::ACTIVE_SYSTEM_CONFIG, None)
+			.map_err(Error::UpdatedInfraSystemConfig)
 	}
 
 	/// Read the [`AbridgedHostConfiguration`] from the relay chain state proof.

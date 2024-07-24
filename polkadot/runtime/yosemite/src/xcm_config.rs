@@ -176,7 +176,7 @@ parameter_types! {
 }
 
 pub type PriceForChildParachainDelivery =
-	ExponentialPrice<FeeAssetId, BaseDeliveryFee, TransactionByteFee, Dmp>;
+	polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery<ParaId>;
 
 /// The XCM router. When we want to send an XCM message, we use this type. It amalgamates all of our
 /// individual routers.
