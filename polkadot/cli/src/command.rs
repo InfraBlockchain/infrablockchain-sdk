@@ -98,8 +98,9 @@ impl SubstrateCli for Cli {
 			path => {
 				let path = std::path::PathBuf::from(path);
 
-				let chain_spec = Box::new(polkadot_service::GenericChainSpec::from_json_file(path.clone())?)
-					as Box<dyn polkadot_service::ChainSpec>;
+				let chain_spec =
+					Box::new(polkadot_service::GenericChainSpec::from_json_file(path.clone())?)
+						as Box<dyn polkadot_service::ChainSpec>;
 
 				// When `force_*` is given or the file name starts with the name of one of the known
 				// chains, we use the chain spec for the specific chain.

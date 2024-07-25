@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 use cumulus_primitives_core::{
-	relay_chain, AbridgedHostConfiguration, AbridgedHrmpChannel, ParaId, Location
+	relay_chain, AbridgedHostConfiguration, AbridgedHrmpChannel, Location, ParaId,
 };
 use scale_info::TypeInfo;
 use sp_runtime::traits::HashingFor;

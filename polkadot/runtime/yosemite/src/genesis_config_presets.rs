@@ -288,7 +288,7 @@ pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<
 		Ok("local_testnet") => yosemite_local_testnet_genesis(),
 		Ok("staging_testnet") => yosemite_local_testnet_genesis(),
 		Ok("mainnet") => yosemite_local_testnet_genesis(),
- 		_ => return None,
+		_ => return None,
 	};
 	Some(
 		serde_json::to_string(&patch)
