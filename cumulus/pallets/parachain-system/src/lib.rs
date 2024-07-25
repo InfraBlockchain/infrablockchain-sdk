@@ -621,7 +621,7 @@ pub mod pallet {
 				.read_active_system_config()
 				.expect("Error on reading infra system config in relay chain state proof");
 			T::UpdateRCConfig::update_system_config(infra_system_config);
-			
+
 			let update_weights = relay_state_proof
 				.read_updated_system_token_weight()
 				.expect("Error on reading updated system token weight");
