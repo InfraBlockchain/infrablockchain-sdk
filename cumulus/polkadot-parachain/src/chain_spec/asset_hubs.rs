@@ -150,7 +150,7 @@ fn asset_hub_yosemite_like_local_config(
 #[cfg(feature = "infra-parachain")]
 pub fn asset_hub_yosemite_genesis_config() -> GenericChainSpec {
 	let mut properties = sc_chain_spec::Properties::new();
-	properties.insert("tokenSymbol".into(), "YOS".into());
+	properties.insert("tokenSymbol".into(), "BCL".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 	let para_id = 1000;
 	GenericChainSpec::builder(
