@@ -62,7 +62,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/paritytech/polkadot-sdk/issues/new".into()
+		"https://github.com/InfraBlockchain/infrablockchain-substrate/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -76,7 +76,7 @@ impl SubstrateCli for Cli {
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 		let id = if id == "" {
 			let n = get_exec_name().unwrap_or_default();
-			["polkadot", "kusama", "westend", "rococo", "versi"]
+			["yosemite"]
 				.iter()
 				.cloned()
 				.find(|&chain| n.starts_with(chain))
@@ -85,21 +85,15 @@ impl SubstrateCli for Cli {
 			id
 		};
 		Ok(match id {
-			"kusama" => Box::new(polkadot_service::chain_spec::kusama_config()?),
-			name if name.starts_with("kusama-") && !name.ends_with(".json") =>
-				Err(format!("`{name}` is not supported anymore as the kusama native runtime no longer part of the node."))?,
-			"polkadot" => Box::new(polkadot_service::chain_spec::polkadot_config()?),
-			name if name.starts_with("polkadot-") && !name.ends_with(".json") =>
-				Err(format!("`{name}` is not supported anymore as the polkadot native runtime no longer part of the node."))?,
 			"yosemite" => Box::new(polkadot_service::chain_spec::yosemite_config()?),
 			#[cfg(feature = "yosemite-native")]
-			"yosemite-dev" => Box::new(polkadot_service::chain_spec::yosemite_development_config()?),
+			"yosemite-dev" | "dev" => Box::new(polkadot_service::chain_spec::yosemite_development_config()?),
 			#[cfg(feature = "yosemite-native")]
 			"yosemite-local" => Box::new(polkadot_service::chain_spec::yosemite_local_testnet_config()?),
 			#[cfg(feature = "yosemite-native")]
 			"yosemite-staging" => Box::new(polkadot_service::chain_spec::yosemite_staging_testnet_config()?),
 			#[cfg(not(feature = "yosemite-native"))]
-			name if name.starts_with("rococo-") && !name.ends_with(".json") || name == "dev" =>
+			name if name.starts_with("yosemite-") && !name.ends_with(".json") || name == "dev" =>
 				Err(format!("`{}` only supported with `yosemite-native` feature enabled.", name))?,
 			path => {
 				let path = std::path::PathBuf::from(path);
