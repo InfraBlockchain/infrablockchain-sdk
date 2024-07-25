@@ -190,7 +190,7 @@ fn default_parachains_host_configuration_is_consistent() {
 	default_parachains_host_configuration().panic_if_not_consistent();
 }
 
-fn rococo_testnet_genesis(
+fn yosemite_testnet_genesis(
 	initial_authorities: Vec<(
 		AccountId,
 		AccountId,
@@ -254,8 +254,8 @@ fn rococo_testnet_genesis(
 }
 
 //development
-fn rococo_development_config_genesis() -> serde_json::Value {
-	rococo_testnet_genesis(
+fn yosemite_development_config_genesis() -> serde_json::Value {
+	yosemite_testnet_genesis(
 		Vec::from([
 			get_authority_keys_from_seed_no_beefy("Alice"),
 			get_authority_keys_from_seed_no_beefy("Bob"),
@@ -266,8 +266,8 @@ fn rococo_development_config_genesis() -> serde_json::Value {
 }
 
 //local_testnet
-fn rococo_local_testnet_genesis() -> serde_json::Value {
-	rococo_testnet_genesis(
+fn yosemite_local_testnet_genesis() -> serde_json::Value {
+	yosemite_testnet_genesis(
 		Vec::from([
 			get_authority_keys_from_seed_no_beefy("Alice"),
 			get_authority_keys_from_seed_no_beefy("Bob"),
@@ -284,9 +284,11 @@ fn rococo_local_testnet_genesis() -> serde_json::Value {
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
 	let patch = match id.try_into() {
-		Ok("yosemite_local_testnet") => rococo_local_testnet_genesis(),
-		Ok("yosemite_devnet") => rococo_development_config_genesis(),
-		_ => return None,
+		Ok("dev") => yosemite_development_config_genesis(),
+		Ok("local_testnet") => yosemite_local_testnet_genesis(),
+		Ok("staging_testnet") => yosemite_local_testnet_genesis(),
+		Ok("mainnet") => yosemite_local_testnet_genesis(),
+ 		_ => return None,
 	};
 	Some(
 		serde_json::to_string(&patch)

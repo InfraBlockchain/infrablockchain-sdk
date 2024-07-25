@@ -67,14 +67,6 @@ pub type YosemiteChainSpec = sc_service::GenericChainSpec<Extensions>;
 #[cfg(not(feature = "yosemite-native"))]
 pub type YosemiteChainspec = GenericChainSpec;
 
-pub fn polkadot_config() -> Result<GenericChainSpec, String> {
-	GenericChainSpec::from_json_bytes(&include_bytes!("../chain-specs/polkadot.json")[..])
-}
-
-pub fn kusama_config() -> Result<GenericChainSpec, String> {
-	GenericChainSpec::from_json_bytes(&include_bytes!("../chain-specs/kusama.json")[..])
-}
-
 pub fn yosemite_config() -> Result<YosemiteChainSpec, String> {
 	YosemiteChainSpec::from_json_bytes(&include_bytes!("../chain-specs/rococo.json")[..])
 }
@@ -126,7 +118,7 @@ pub fn get_authority_keys_from_seed_no_beefy(
 	)
 }
 
-/// Rococo development config (single validator Alice)
+/// Yosemite development config (single validator Alice)
 #[cfg(feature = "yosemite-native")]
 pub fn yosemite_development_config() -> Result<YosemiteChainSpec, String> {
 	Ok(YosemiteChainSpec::builder(
@@ -136,27 +128,27 @@ pub fn yosemite_development_config() -> Result<YosemiteChainSpec, String> {
 	.with_name("Yosemite Development")
 	.with_id("yosemite_development")
 	.with_chain_type(ChainType::Development)
-	.with_genesis_config_preset_name("yosemite_development")
+	.with_genesis_config_preset_name("dev")
 	.with_protocol_id(DEFAULT_PROTOCOL_ID)
 	.build())
 }
 
-/// Rococo local testnet config (multivalidator Alice + Bob)
+/// Yosemite local testnet config.
 #[cfg(feature = "yosemite-native")]
 pub fn yosemite_local_testnet_config() -> Result<YosemiteChainSpec, String> {
 	Ok(YosemiteChainSpec::builder(
 		yosemite::fast_runtime_binary::WASM_BINARY.ok_or("Yosemite wasm not available")?,
 		Default::default(),
 	)
-	.with_name("Yosemite Testnet")
-	.with_id("yosemite_testnet")
+	.with_name("Yosemite Local Testnet")
+	.with_id("yosemite_local_testnet")
 	.with_chain_type(ChainType::Local)
-	.with_genesis_config_preset_name("yosemite_testnet")
+	.with_genesis_config_preset_name("local_testnet")
 	.with_protocol_id(DEFAULT_PROTOCOL_ID)
 	.build())
 }
 
-/// Rococo staging testnet config.
+/// Yosemite staging testnet config.
 #[cfg(feature = "yosemite-native")]
 pub fn yosemite_staging_testnet_config() -> Result<YosemiteChainSpec, String> {
 	Ok(YosemiteChainSpec::builder(
@@ -166,7 +158,7 @@ pub fn yosemite_staging_testnet_config() -> Result<YosemiteChainSpec, String> {
 	.with_name("Yosemite Staging Testnet")
 	.with_id("yosemite_staging_testnet")
 	.with_chain_type(ChainType::Live)
-	.with_genesis_config_preset_name("yosemite_staging_testnet")
+	.with_genesis_config_preset_name("staging_testnet")
 	.with_telemetry_endpoints(
 		TelemetryEndpoints::new(vec![(YOSEMITE_STAGING_TELEMETRY_URL.to_string(), 0)])
 			.expect("Yosemite Staging telemetry url is valid; qed"),
