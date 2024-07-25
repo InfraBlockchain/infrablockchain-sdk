@@ -1,9 +1,9 @@
 [workspace.package]
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["Blockchain Labs <admin@bcl.io>"]
 edition = "2021"
-repository = "https://github.com/paritytech/polkadot-sdk.git"
+repository = "https://github.com/InfraBlockchain/infrablockchain-substrate"
 license = "GPL-3.0-only"
-homepage = "https://paritytech.github.io/polkadot-sdk/master/polkadot_sdk_docs/index.html"
+homepage = "https://www.infrablockchain.net/en"
 
 [workspace]
 resolver = "2"

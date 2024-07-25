@@ -225,7 +225,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/paritytech/polkadot-sdk/issues/new".into()
+		"https://github.com/InfraBlockchain/infrablockchain-substrate/issues".into()
 	}
 
 	fn copyright_start_year() -> i32 {

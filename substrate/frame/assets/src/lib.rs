@@ -752,7 +752,7 @@ pub mod pallet {
 					accounts: 0,
 					sufficients: 0,
 					approvals: 0,
-					status: AssetStatus::Live,
+					status: AssetStatus::InActive,
 					currency_type: None,
 					system_token_weight: None,
 				},
