@@ -467,7 +467,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Self::can_increase(id.clone(), beneficiary, amount, true).into_result()?;
 		Asset::<T, I>::try_mutate(&id, |maybe_details| -> DispatchResult {
 			let details = maybe_details.as_mut().ok_or(Error::<T, I>::Unknown)?;
-			ensure!(details.status == AssetStatus::Live, Error::<T, I>::AssetNotLive);
+			ensure!(details.status.is_mintable(), Error::<T, I>::AssetNotLive);
+			if details.status == AssetStatus::InActive {
+				ensure!(details.issuer == *beneficiary, Error::<T, I>::NoPermission);
+			}
 			check(details)?;
 
 			Account::<T, I>::try_mutate(&id, beneficiary, |maybe_account| -> DispatchResult {
