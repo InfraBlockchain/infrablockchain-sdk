@@ -29,6 +29,7 @@ target
 !target/release/polkadot-prepare-worker
 !target/release/infra-assethub-parachain
 !target/release/infra-parachain
+!target/release/polkadot-parachain
 **/wip/*.stderr
 /.cargo/config
 /.envrc
