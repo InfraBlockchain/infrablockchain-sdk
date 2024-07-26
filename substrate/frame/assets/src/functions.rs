@@ -1007,16 +1007,17 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			ensure!(metadata.as_ref().map_or(true, |m| !m.is_frozen), Error::<T, I>::NoPermission);
 
 			let old_deposit = metadata.take().map_or(Zero::zero(), |m| m.deposit);
-			let new_deposit = Self::calc_metadata_deposit(&name, &symbol);
+			// TODO
+			// let new_deposit = Self::calc_metadata_deposit(&name, &symbol);
 
-			if new_deposit > old_deposit {
-				T::Currency::reserve(from, new_deposit - old_deposit)?;
-			} else {
-				T::Currency::unreserve(from, old_deposit - new_deposit);
-			}
+			// if new_deposit > old_deposit {
+			// 	T::Currency::reserve(from, new_deposit - old_deposit)?;
+			// } else {
+			// 	T::Currency::unreserve(from, old_deposit - new_deposit);
+			// }
 
 			*metadata = Some(AssetMetadata {
-				deposit: new_deposit,
+				deposit: old_deposit,
 				name: bounded_name,
 				symbol: bounded_symbol,
 				decimals,

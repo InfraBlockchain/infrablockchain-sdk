@@ -652,7 +652,9 @@ impl<T: Config> Pallet<T> {
 				decimals,
 				min_balance,
 			);
+			let system_token_weight = Self::calc_system_token_weight(&currency_type, original)?;
 			Metadata::<T>::insert(original, system_token_metadata.clone());
+			SystemToken::<T>::insert(original, SystemTokenDetail::new(system_token_weight));
 			RequestFiatList::<T>::mutate(|request_fiat| {
 				if !request_fiat.contains(&currency_type) {
 					request_fiat.push(currency_type);
