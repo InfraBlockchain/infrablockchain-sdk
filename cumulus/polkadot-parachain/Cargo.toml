@@ -61,6 +61,7 @@ sp-transaction-pool = { workspace = true, default-features = true }
 sc-network = { workspace = true, default-features = true }
 sc-network-sync = { workspace = true, default-features = true }
 sc-basic-authorship = { workspace = true, default-features = true }
+sc-offchain = { workspace = true, default-features = true }
 sp-timestamp = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
 sp-genesis-builder = { workspace = true }
