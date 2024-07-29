@@ -635,7 +635,7 @@ type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
 >;
 
 parameter_types! {
-	pub const ActiveRequestPeriod: u32 = 100;
+	pub const ActiveRequestPeriod: u32 = DAYS;
 }
 
 impl cumulus_pallet_infra_parachain_core::Config for Runtime {
@@ -730,7 +730,7 @@ impl pallet_collator_selection::Config for Runtime {
 }
 
 parameter_types! {
-	pub const APIRequestPeriod: BlockNumber = DAYS;
+	pub const APIRequestPeriod: BlockNumber = 4 * HOURS;
 	pub const UnsignedPriority: TransactionPriority = TransactionPriority::max_value();
 }
 
