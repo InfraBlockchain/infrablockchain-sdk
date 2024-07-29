@@ -94,7 +94,7 @@ pub mod pallet {
 				// TODO: Needs to add some validity check for the transaction
 				// - Make it signed payload
 				let current = <frame_system::Pallet<T>>::block_number();
-				let next_unsigned_at = <NextUnsignedAt<T>>::get();
+				let next_unsigned_at = NextUnsignedAt::<T>::get();
 				if next_unsigned_at > current {
 					return InvalidTransaction::Stale.into();
 				}
@@ -135,6 +135,10 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn offchain_worker(_n: BlockNumberFor<T>) {
 			if let Some(currencies) = Requested::<T>::get() {
+				if <frame_system::Pallet<T>>::block_number() < NextUnsignedAt::<T>::get() {
+					log::info!("Too early to request fiat");
+					return;
+				}
 				if let Err(e) = Self::fetch_exchange_rate(currencies.clone()) {
 					log::warn!("❌❌ Failed to fetch exchange rate for => {:?}", currencies);
 					log::info!("Error! {:?}", e);
@@ -157,7 +161,7 @@ pub mod pallet {
 			T::SystemTokenOracle::submit_exchange_rates(exchange_rates.clone());
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			let next_unsigned_at = current_block + T::RequestPeriod::get();
-			<NextUnsignedAt<T>>::put(next_unsigned_at);
+			NextUnsignedAt::<T>::put(next_unsigned_at);
 			Self::deposit_event(Event::<T>::ExchangeRatesSubmitted { exchange_rates });
 			Ok(())
 		}
