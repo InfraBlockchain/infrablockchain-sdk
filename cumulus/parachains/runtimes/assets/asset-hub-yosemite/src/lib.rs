@@ -834,7 +834,7 @@ construct_runtime!(
 		SystemTokenOracle: pallet_system_token_oracle = 55,
 		SystemTokenConversion: pallet_system_token_conversion = 56,
 
-		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 99,
+		Sudo: pallet_sudo = 99,
 	}
 );
 
