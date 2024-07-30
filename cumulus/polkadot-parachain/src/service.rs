@@ -636,7 +636,7 @@ pub async fn _start_generic_aura_lookahead_node<Net: NetworkBackend<Block, Hash>
 ///
 /// Uses the lookahead collator to support async backing.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
-pub async fn start_asset_hub_lookahead_node<RuntimeApi, AuraId, Net>(
+pub async fn start_lookahead_node<RuntimeApi, AuraId, Net>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,

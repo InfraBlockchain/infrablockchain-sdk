@@ -1,0 +1,88 @@
+[package]
+name = "pallet-did"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+bitflags = { workspace = true }
+codec = { workspace = true, features = ["derive"] }
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+hex-literal = { workspace = true, optional = true }
+num-traits = { workspace = true }
+scale-info = { workspace = true, features = ["derive", "serde"] }
+scale-info-derive = { workspace = true }
+serde = { workspace = true, features = ["derive", "alloc"] }
+serde-big-array = { workspace = true, optional = true }
+hex = { workspace = true, features = ["serde"], optional = true }
+sp-api = { workspace = true }
+sp-application-crypto = { workspace = true, features = [
+    "serde",
+    "full_crypto",
+] }
+sp-core = { workspace = true, features = ["full_crypto"] }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+libsecp256k1 = { workspace = true, features = ["static-context", "hmac"] }
+merlin = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+rand_chacha = { workspace = true, optional = true }
+schnorrkel = { version = "0.9.1", default-features = false, optional = true }
+sha2 = { workspace = true }
+
+[dev-dependencies]
+rand = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-timestamp = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+    "hex/std",
+    "codec/std",
+    "frame-support/std",
+    "frame-benchmarking/std",
+    "pallet-balances/std",
+    "sp-application-crypto/std",
+    "sp-application-crypto/full_crypto",
+    "serde",
+    "serde-big-array",
+    "sp-core/std",
+    "sp-core/full_crypto",
+    "sp-io/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "frame-system/std",
+    "sp-api/std",
+    "num-traits/std",
+    "libsecp256k1/std",
+    "scale-info/std",
+    "hex-literal",
+]
+
+# Serde support without relying on std features.
+serde = [
+    "hex/serde",
+    "scale-info/serde",
+    "sp-application-crypto/serde",
+    "sp-core/serde",
+    "sp-runtime/serde",
+    "serde-big-array",
+]
+
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+    "hex-literal",
+    "schnorrkel",
+    "schnorrkel/chacha",
+    "rand_chacha",
+    "rand",
+    "merlin",
+]

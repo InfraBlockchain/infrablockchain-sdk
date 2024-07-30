@@ -798,47 +798,43 @@ where
 construct_runtime!(
 	pub enum Runtime {
 		// System support stuff.
-		System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>} = 0,
-		ParachainSystem: cumulus_pallet_parachain_system::{
-			Pallet, Call, Config<T>, Storage, Inherent, Event<T>, ValidateUnsigned,
-		} = 1,
-		InfraParaCore: cumulus_pallet_infra_parachain_core::{
-			Pallet, Call, Storage, Event<T>
-		} = 2,
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 3,
-		ParachainInfo: parachain_info::{Pallet, Storage, Config<T>} = 4,
+		System: frame_system = 0,
+		ParachainSystem: cumulus_pallet_parachain_system = 1,
+		InfraParaCore: cumulus_pallet_infra_parachain_core = 2,
+		Timestamp: pallet_timestamp = 3,
+		ParachainInfo: parachain_info = 4,
 
 		// Monetary stuff.
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 10,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 11,
-		SystemTokenTxPayment: pallet_system_token_tx_payment::{Pallet, Event<T>} = 12,
+		Balances: pallet_balances = 10,
+		TransactionPayment: pallet_transaction_payment = 11,
+		SystemTokenTxPayment: pallet_system_token_tx_payment = 12,
 
 		// Collator support. the order of these 5 are important and shall not change.
-		Authorship: pallet_authorship::{Pallet, Storage} = 20,
-		CollatorSelection: pallet_collator_selection::{Pallet, Call, Storage, Event<T>, Config<T>} = 21,
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 22,
-		Aura: pallet_aura::{Pallet, Storage, Config<T>} = 23,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Storage, Config<T>} = 24,
+		Authorship: pallet_authorship = 20,
+		CollatorSelection: pallet_collator_selection = 21,
+		Session: pallet_session = 22,
+		Aura: pallet_aura = 23,
+		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		// XCM helpers.
-		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 30,
-		InfraXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 31,
-		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 32,
+		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
+		InfraXcm: pallet_xcm = 31,
+		CumulusXcm: cumulus_pallet_xcm = 32,
 		MessageQueue: pallet_message_queue = 33,
 
 		// Handy utilities.
-		Utility: pallet_utility::{Pallet, Call, Event} = 40,
-		Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>} = 41,
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 42,
+		Utility: pallet_utility = 40,
+		Multisig: pallet_multisig = 41,
+		Proxy: pallet_proxy = 42,
 
 		// The main stage.
-		Assets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} = 50,
-		ForeignAssets: pallet_assets::<Instance2>::{Pallet, Call, Storage, Event<T>, Config<T>} = 51,
-		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>} = 52,
-		SystemTokenOracle: pallet_system_token_oracle::{Pallet, Call, Storage, Event<T>, ValidateUnsigned} = 55,
-		SystemTokenConversion: pallet_system_token_conversion::{Pallet, Event<T>} = 56,
+		Assets: pallet_assets::<Instance1> = 50,
+		ForeignAssets: pallet_assets::<Instance2> = 51,
+		Uniques: pallet_uniques = 52,
+		SystemTokenOracle: pallet_system_token_oracle = 55,
+		SystemTokenConversion: pallet_system_token_conversion = 56,
 
-		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 99,
+		Sudo: pallet_sudo = 99,
 	}
 );
 
