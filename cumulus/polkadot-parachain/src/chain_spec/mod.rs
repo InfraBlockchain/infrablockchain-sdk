@@ -20,6 +20,8 @@ use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
+#[cfg(feature="infra-parachain")]
+pub mod infra_dids;
 #[cfg(feature = "infra-parachain")]
 pub mod asset_hubs;
 #[cfg(feature = "polkadot-parachain")]

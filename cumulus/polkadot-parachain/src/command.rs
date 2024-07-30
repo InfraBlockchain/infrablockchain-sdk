@@ -45,6 +45,8 @@ enum Runtime {
 	Default,
 	#[cfg(feature = "infra-parachain")]
 	AssetHubYosemite,
+	#[cfg(feature = "infra-parachain")]
+	InfraDIDYosemite,
 }
 
 trait RuntimeResolver {
@@ -80,6 +82,8 @@ fn runtime(id: &str) -> Runtime {
 
 	if id.starts_with("asset-hub-yosemite") {
 		Runtime::AssetHubYosemite
+	} else if id.starts_with("infra-did-yosemite") {
+		Runtime::InfraDIDYosemite
 	} else {
 		log::warn!("No specific runtime was recognized for ChainSpec's id: '{}', so Runtime::default() will be used", id);
 		Runtime::default()
@@ -92,7 +96,7 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 		// - Default-like
 		// -- Asset Hub Yosemite
 		#[cfg(feature = "infra-parachain")]
-		"asset-hub-yosemite-dev" =>
+		"asset-hub-yosemite-dev" | "dev" =>
 			Box::new(chain_spec::asset_hubs::asset_hub_yosemite_development_config()),
 		#[cfg(feature = "infra-parachain")]
 		"asset-hub-yosemite-local" => Box::new(chain_spec::asset_hubs::asset_hub_yosemite_local_config()),
@@ -104,6 +108,14 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 		"asset-hub-yosemite" => Box::new(GenericChainSpec::from_json_bytes(
 			&include_bytes!("../chain-specs/asset-hub-yosemite.json")[..],
 		)?),
+		#[cfg(feature = "infra-parachain")]
+		"infra-did-yosemite-dev" => Box::new(chain_spec::infra_dids::development_config()),
+		#[cfg(feature = "infra-parachain")]
+		"infra-did-yosemite-local-testnet" => Box::new(chain_spec::infra_dids::testnet_config()),
+		#[cfg(feature = "infra-parachain")]
+		"infra-did-yosemite-staging-testnet" => Box::new(chain_spec::infra_dids::testnet_config()),
+		#[cfg(feature = "infra-parachain")]
+		"infra-did-yosemite-mainnet" => Box::new(chain_spec::infra_dids::mainnet_config()),
 		// -- Fallback (generic chainspec)
 		"" => {
 			log::warn!("No ChainSpec.id specified, so using default one, based on yosemite-parachain runtime");
@@ -116,7 +128,6 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 }
 
 /// Extracts the normalized chain id and parachain id from the input chain id.
-/// (H/T to Phala for the idea)
 /// E.g. "penpal-kusama-2004" yields ("penpal-kusama", Some(2004))
 fn extract_parachain_id(id: &str) -> (&str, &str, Option<ParaId>) {
 	const ROCOCO_TEST_PARA_PREFIX: &str = "penpal-rococo-";
@@ -167,7 +178,7 @@ fn extract_parachain_id(id: &str) -> (&str, &str, Option<ParaId>) {
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"InfraRelay parachain".into()
+		"InfraParachain".into()
 	}
 
 	fn impl_version() -> String {
@@ -176,7 +187,7 @@ impl SubstrateCli for Cli {
 
 	fn description() -> String {
 		format!(
-			"Polkadot parachain\n\nThe command-line arguments provided first will be \
+			"InfraParachain\n\nThe command-line arguments provided first will be \
 		passed to the parachain node, while the arguments provided after -- will be passed \
 		to the relaychain node.\n\n\
 		{} [parachain-args] -- [relaychain-args]",
@@ -189,7 +200,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/paritytech/polkadot-sdk/issues/new".into()
+		"https://github.com/InfraBlockchain/infrablockchain-substrate/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -203,7 +214,7 @@ impl SubstrateCli for Cli {
 
 impl SubstrateCli for RelayChainCli {
 	fn impl_name() -> String {
-		"InfraRelay".into()
+		"InfraParachain".into()
 	}
 
 	fn impl_version() -> String {
@@ -212,7 +223,7 @@ impl SubstrateCli for RelayChainCli {
 
 	fn description() -> String {
 		format!(
-			"Polkadot parachain\n\nThe command-line arguments provided first will be \
+			"InfraParachain\n\nThe command-line arguments provided first will be \
 		passed to the parachain node, while the arguments provided after -- will be passed \
 		to the relay chain node.\n\n\
 		{} [parachain-args] -- [relay_chain-args]",
@@ -255,6 +266,13 @@ macro_rules! construct_partials {
 				)?;
 				$code
 			},
+			Runtime::InfraDIDYosemite => {
+				let $partials = new_partial::<RuntimeApi, _>(
+					&$config,
+					crate::service::build_relay_to_aura_import_queue::<_, AuraId>,
+				)?;
+				$code
+			},
 		}
 	};
 }
@@ -277,6 +295,16 @@ macro_rules! construct_async_run {
 				})
 			},
 			Runtime::AssetHubYosemite => {
+				runner.async_run(|$config| {
+					let $components = new_partial::<RuntimeApi, _>(
+						&$config,
+						crate::service::build_relay_to_aura_import_queue::<_, AuraId>,
+					)?;
+					let task_manager = $components.task_manager;
+					{ $( $code )* }.map(|v| (v, task_manager))
+				})
+			},
+			Runtime::InfraDIDYosemite => {
 				runner.async_run(|$config| {
 					let $components = new_partial::<RuntimeApi, _>(
 						&$config,
@@ -397,37 +425,6 @@ pub fn run() -> Result<()> {
 			let collator_options = cli.run.collator_options();
 
 			runner.run_node_until_exit(|config| async move {
-				// If Statemint (Statemine, Westmint, Rockmine) DB exists and we're using the
-				// asset-hub chain spec, then rename the base path to the new chain ID. In the case
-				// that both file paths exist, the node will exit, as the user must decide (by
-				// deleting one path) the information that they want to use as their DB.
-				let old_name = match config.chain_spec.id() {
-					"asset-hub-polkadot" => Some("statemint"),
-					"asset-hub-kusama" => Some("statemine"),
-					"asset-hub-westend" => Some("westmint"),
-					"asset-hub-rococo" => Some("rockmine"),
-					_ => None,
-				};
-
-				if let Some(old_name) = old_name {
-					let new_path = config.base_path.config_dir(config.chain_spec.id());
-					let old_path = config.base_path.config_dir(old_name);
-
-					if old_path.exists() && new_path.exists() {
-						return Err(format!(
-							"Found legacy {} path {} and new asset-hub path {}. Delete one path such that only one exists.",
-							old_name, old_path.display(), new_path.display()
-						).into())
-					}
-
-					if old_path.exists() {
-						std::fs::rename(old_path.clone(), new_path.clone())?;
-						info!(
-							"Statemint renamed to Asset Hub. The filepath with associated data on disk has been renamed from {} to {}.",
-							old_path.display(), new_path.display()
-						);
-					}
-				}
 
 				let hwbench = (!cli.no_hardware_benchmarks).then_some(
 					config.database.path().map(|database_path| {
@@ -487,7 +484,17 @@ async fn start_node<Network: sc_network::NetworkBackend<Block, Hash>>(
 ) -> Result<sc_service::TaskManager> {
 	match config.chain_spec.runtime()? {
 		#[cfg(feature = "infra-parachain")]
-		Runtime::AssetHubYosemite => crate::service::start_asset_hub_lookahead_node::<
+		Runtime::AssetHubYosemite => crate::service::start_lookahead_node::<
+			RuntimeApi,
+			AuraId,
+			Network,
+		>(config, polkadot_config, collator_options, id, hwbench)
+		.await
+		.map(|r| r.0)
+		.map_err(Into::into),
+
+		#[cfg(feature = "infra-parachain")]
+		Runtime::InfraDIDYosemite => crate::service::start_lookahead_node::<
 			RuntimeApi,
 			AuraId,
 			Network,

@@ -30,6 +30,7 @@ jsonrpsee = { features = ["server"], workspace = true }
 rococo-parachain-runtime = { workspace = true, optional = true }
 shell-runtime = { workspace = true, optional = true }
 seedling-runtime = { workspace = true, optional = true }
+infra-did-yosemite-runtime = { workspace = true, default-features = true, optional = true }
 asset-hub-yosemite-runtime = { workspace = true, default-features = true, optional = true }
 contracts-rococo-runtime = { workspace = true, optional = true }
 bridge-hub-rococo-runtime = { workspace = true, default-features = true, optional = true }
@@ -131,6 +132,7 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"parachains-common/runtime-benchmarks",
+	"infra-did-yosemite-runtime?/runtime-benchmarks",
 	"asset-hub-yosemite-runtime?/runtime-benchmarks",
 	"bridge-hub-rococo-runtime?/runtime-benchmarks",
 	"contracts-rococo-runtime?/runtime-benchmarks",
@@ -146,6 +148,7 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 	"polkadot-cli/try-runtime",
 	"polkadot-service/try-runtime",
+	"infra-did-yosemite-runtime?/try-runtime",
 	"asset-hub-yosemite-runtime?/try-runtime",
 	"bridge-hub-rococo-runtime?/try-runtime",
 	"contracts-rococo-runtime?/try-runtime",
@@ -159,6 +162,7 @@ fast-runtime = [
 	"coretime-rococo-runtime?/fast-runtime",
 ]
 infra-parachain = [
+	"infra-did-yosemite-runtime",
 	"asset-hub-yosemite-runtime"
 ]
 polkadot-parachain = [
