@@ -312,7 +312,6 @@ members = [
 	"substrate/frame/core-fellowship",
 	"substrate/frame/delegated-staking",
 	"substrate/frame/democracy",
-	"substrate/frame/did",
 	"substrate/frame/election-provider-multi-phase",
 	"substrate/frame/election-provider-multi-phase/test-staking-e2e",
 	"substrate/frame/election-provider-support",
@@ -575,7 +574,6 @@ array-bytes = { version = "6.2.2", default-features = false }
 arrayvec = { version = "0.7.4" }
 assert_cmd = { version = "2.0.10" }
 assert_matches = { version = "1.5.0" }
-infra-did-yosemite-runtime = { path = "cumulus/parachains/runtimes/did/infra-did-yosemite", default-features = false }
 asset-hub-rococo-emulated-chain = { path = "cumulus/parachains/integration-tests/emulated/chains/parachains/assets/asset-hub-rococo" }
 asset-hub-yosemite-runtime = { path = "cumulus/parachains/runtimes/assets/asset-hub-yosemite", default-features = false }
 asset-test-utils = { path = "cumulus/parachains/runtimes/assets/test-utils", default-features = false }
@@ -866,7 +864,6 @@ pallet-default-config-example = { path = "substrate/frame/examples/default-confi
 pallet-delegated-staking = { path = "substrate/frame/delegated-staking", default-features = false }
 pallet-democracy = { path = "substrate/frame/democracy", default-features = false }
 pallet-dev-mode = { path = "substrate/frame/examples/dev-mode", default-features = false }
-pallet-did = { path = "substrate/frame/did", default-features = false }
 pallet-election-provider-multi-phase = { path = "substrate/frame/election-provider-multi-phase", default-features = false }
 pallet-election-provider-support-benchmarking = { path = "substrate/frame/election-provider-support/benchmarking", default-features = false }
 pallet-elections-phragmen = { path = "substrate/frame/elections-phragmen", default-features = false }

@@ -45,8 +45,6 @@ enum Runtime {
 	Default,
 	#[cfg(feature = "infra-parachain")]
 	AssetHubYosemite,
-	#[cfg(feature = "infra-parachain")]
-	InfraDIDYosemite,
 }
 
 trait RuntimeResolver {
@@ -82,8 +80,6 @@ fn runtime(id: &str) -> Runtime {
 
 	if id.starts_with("asset-hub-yosemite") {
 		Runtime::AssetHubYosemite
-	} else if id.starts_with("infra-did-yosemite") {
-		Runtime::InfraDIDYosemite
 	} else {
 		log::warn!("No specific runtime was recognized for ChainSpec's id: '{}', so Runtime::default() will be used", id);
 		Runtime::default()
@@ -108,14 +104,6 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 		"asset-hub-yosemite" => Box::new(GenericChainSpec::from_json_bytes(
 			&include_bytes!("../chain-specs/asset-hub-yosemite.json")[..],
 		)?),
-		#[cfg(feature = "infra-parachain")]
-		"infra-did-yosemite-dev" => Box::new(chain_spec::infra_dids::development_config()),
-		#[cfg(feature = "infra-parachain")]
-		"infra-did-yosemite-local-testnet" => Box::new(chain_spec::infra_dids::testnet_config()),
-		#[cfg(feature = "infra-parachain")]
-		"infra-did-yosemite-staging-testnet" => Box::new(chain_spec::infra_dids::testnet_config()),
-		#[cfg(feature = "infra-parachain")]
-		"infra-did-yosemite-mainnet" => Box::new(chain_spec::infra_dids::mainnet_config()),
 		// -- Fallback (generic chainspec)
 		"" => {
 			log::warn!("No ChainSpec.id specified, so using default one, based on yosemite-parachain runtime");
@@ -265,14 +253,7 @@ macro_rules! construct_partials {
 					crate::service::build_relay_to_aura_import_queue::<_, AuraId>,
 				)?;
 				$code
-			},
-			Runtime::InfraDIDYosemite => {
-				let $partials = new_partial::<RuntimeApi, _>(
-					&$config,
-					crate::service::build_relay_to_aura_import_queue::<_, AuraId>,
-				)?;
-				$code
-			},
+			}
 		}
 	};
 }
@@ -295,16 +276,6 @@ macro_rules! construct_async_run {
 				})
 			},
 			Runtime::AssetHubYosemite => {
-				runner.async_run(|$config| {
-					let $components = new_partial::<RuntimeApi, _>(
-						&$config,
-						crate::service::build_relay_to_aura_import_queue::<_, AuraId>,
-					)?;
-					let task_manager = $components.task_manager;
-					{ $( $code )* }.map(|v| (v, task_manager))
-				})
-			},
-			Runtime::InfraDIDYosemite => {
 				runner.async_run(|$config| {
 					let $components = new_partial::<RuntimeApi, _>(
 						&$config,
@@ -485,16 +456,6 @@ async fn start_node<Network: sc_network::NetworkBackend<Block, Hash>>(
 	match config.chain_spec.runtime()? {
 		#[cfg(feature = "infra-parachain")]
 		Runtime::AssetHubYosemite => crate::service::start_lookahead_node::<
-			RuntimeApi,
-			AuraId,
-			Network,
-		>(config, polkadot_config, collator_options, id, hwbench)
-		.await
-		.map(|r| r.0)
-		.map_err(Into::into),
-
-		#[cfg(feature = "infra-parachain")]
-		Runtime::InfraDIDYosemite => crate::service::start_lookahead_node::<
 			RuntimeApi,
 			AuraId,
 			Network,
