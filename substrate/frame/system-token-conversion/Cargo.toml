@@ -12,25 +12,25 @@ readme = "README.md"
 [dependencies]
 
 # External
-serde = { version = "1.0.188", default-features = false, features = ["alloc", "derive"] }
-codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
+serde = { workspace = true, features = ["alloc", "derive"] }
+codec = { workspace = true, features = [
 	"derive",
 	"max-encoded-len",
 ] }
-log = { version = "0.4.17", default-features = false }
-scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
+log = { workspace = true }
+scale-info = { workspace = true, features = ["derive"] }
 
 # Base 
-frame-benchmarking = { path = "../benchmarking", default-features = false, optional = true }
-frame-support = { path = "../support", default-features = false }
-frame-system = { path = "../system", default-features = false }
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
 
 # Primitives
-sp-core = { path = "../../../substrate/primitives/core", default-features = false }
-sp-io = { path = "../../../substrate/primitives/io", default-features = false }
-sp-runtime = { path = "../../primitives/runtime", default-features = false }
-sp-std = { path = "../../primitives/std", default-features = false }
-sp-arithmetic = { path = "../../primitives/arithmetic", default-features = false }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+sp-arithmetic = { workspace = true }
 
 [features]
 default = ["std"]
