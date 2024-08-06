@@ -70,11 +70,6 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type Requested<T: Config> = StorageValue<_, Vec<Fiat>>;
 
-	/// Exhange rate for each currency
-	#[pallet::storage]
-	pub type ExchangeRates<T: Config> =
-		StorageMap<_, Twox64Concat, Fiat, ExchangeRate, OptionQuery>;
-
 	/// Defines the block when next unsigned transaction will be accepted.
 	///
 	/// To prevent spam of unsigned (and unpaid!) transactions on the network,

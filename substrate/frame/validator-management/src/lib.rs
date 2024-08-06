@@ -149,7 +149,7 @@ impl<T: Config> VotingStatus<T> {
 		for (candidate, amount) in self.status.iter_mut() {
 			if candidate == who {
 				*amount += vote_weight;
-				return
+				return;
 			}
 		}
 		self.status.push((who.clone(), vote_weight));
@@ -372,10 +372,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::unbounded]
 	pub type PotValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
-
-	/// Number of seed trust validators that can be elected
-	#[pallet::storage]
-	pub type NumberOfSeedTrustValidators<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Number of seed trust validators that can be elected
 	#[pallet::storage]

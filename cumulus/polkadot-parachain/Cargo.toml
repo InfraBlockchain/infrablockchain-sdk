@@ -88,7 +88,9 @@ substrate-state-trie-migration-rpc = { workspace = true, default-features = true
 
 # Polkadot
 # Use yosemite-native as this is currently the default "local" relay chain
-polkadot-cli = { features = ["yosemite-native"], workspace = true, default-features = true }
+polkadot-cli = { features = [
+    "yosemite-native",
+], workspace = true, default-features = true }
 polkadot-primitives = { workspace = true, default-features = true }
 polkadot-service = { workspace = true, default-features = true }
 xcm = { workspace = true, default-features = true }
@@ -113,59 +115,59 @@ substrate-build-script-utils = { workspace = true, default-features = true }
 assert_cmd = { workspace = true }
 nix = { features = ["signal"], workspace = true }
 tempfile = { workspace = true }
-tokio = { features = ["macros", "parking_lot", "time"], workspace = true, default-features = true }
+tokio = { features = [
+    "macros",
+    "parking_lot",
+    "time",
+], workspace = true, default-features = true }
 wait-timeout = { workspace = true }
 
 [features]
-default = [
-	"infra-parachain"
-]
+default = ["infra-parachain"]
 runtime-benchmarks = [
-	"cumulus-primitives-core/runtime-benchmarks",
-	"frame-benchmarking-cli/runtime-benchmarks",
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"polkadot-cli/runtime-benchmarks",
-	"polkadot-primitives/runtime-benchmarks",
-	"polkadot-service/runtime-benchmarks",
-	"sc-service/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"parachains-common/runtime-benchmarks",
-	"asset-hub-yosemite-runtime?/runtime-benchmarks",
-	"bridge-hub-rococo-runtime?/runtime-benchmarks",
-	"contracts-rococo-runtime?/runtime-benchmarks",
-	"coretime-rococo-runtime?/runtime-benchmarks",
-	"penpal-runtime?/runtime-benchmarks",
-	"people-rococo-runtime?/runtime-benchmarks",
-	"rococo-parachain-runtime?/runtime-benchmarks",
+    "cumulus-primitives-core/runtime-benchmarks",
+    "frame-benchmarking-cli/runtime-benchmarks",
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "polkadot-cli/runtime-benchmarks",
+    "polkadot-primitives/runtime-benchmarks",
+    "polkadot-service/runtime-benchmarks",
+    "sc-service/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "parachains-common/runtime-benchmarks",
+    "asset-hub-yosemite-runtime?/runtime-benchmarks",
+    "bridge-hub-rococo-runtime?/runtime-benchmarks",
+    "contracts-rococo-runtime?/runtime-benchmarks",
+    "coretime-rococo-runtime?/runtime-benchmarks",
+    "penpal-runtime?/runtime-benchmarks",
+    "people-rococo-runtime?/runtime-benchmarks",
+    "rococo-parachain-runtime?/runtime-benchmarks",
 ]
 try-runtime = [
-	"frame-support/try-runtime",
-	"frame-try-runtime/try-runtime",
-	"pallet-transaction-payment/try-runtime",
-	"sp-runtime/try-runtime",
-	"polkadot-cli/try-runtime",
-	"polkadot-service/try-runtime",
-	"asset-hub-yosemite-runtime?/try-runtime",
-	"bridge-hub-rococo-runtime?/try-runtime",
-	"contracts-rococo-runtime?/try-runtime",
-	"coretime-rococo-runtime?/try-runtime",
-	"penpal-runtime?/try-runtime",
-	"people-rococo-runtime?/try-runtime",
-	"shell-runtime/try-runtime",
+    "frame-support/try-runtime",
+    "frame-try-runtime/try-runtime",
+    "pallet-transaction-payment/try-runtime",
+    "sp-runtime/try-runtime",
+    "polkadot-cli/try-runtime",
+    "polkadot-service/try-runtime",
+    "asset-hub-yosemite-runtime?/try-runtime",
+    "bridge-hub-rococo-runtime?/try-runtime",
+    "contracts-rococo-runtime?/try-runtime",
+    "coretime-rococo-runtime?/try-runtime",
+    "penpal-runtime?/try-runtime",
+    "people-rococo-runtime?/try-runtime",
+    "shell-runtime/try-runtime",
 ]
 fast-runtime = [
-	"bridge-hub-rococo-runtime?/fast-runtime",
-	"coretime-rococo-runtime?/fast-runtime",
+    "bridge-hub-rococo-runtime?/fast-runtime",
+    "coretime-rococo-runtime?/fast-runtime",
 ]
-infra-parachain = [
-	"asset-hub-yosemite-runtime"
-]
+infra-parachain = ["asset-hub-yosemite-runtime"]
 polkadot-parachain = [
-	"bridge-hub-rococo-runtime",
-	"contracts-rococo-runtime",
-	"coretime-rococo-runtime",
-	"penpal-runtime",
-	"people-rococo-runtime",
-	"rococo-parachain-runtime",
+    "bridge-hub-rococo-runtime",
+    "contracts-rococo-runtime",
+    "coretime-rococo-runtime",
+    "penpal-runtime",
+    "people-rococo-runtime",
+    "rococo-parachain-runtime",
 ]
