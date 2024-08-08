@@ -110,6 +110,8 @@ pub mod pallet {
 		SystemTokenUnsuspended { kind: MutateKind<T::SystemTokenId, SystemTokenOriginIdOf<T>> },
 		/// Update exchange rates for given fiat currencies
 		ExchangeRateUpdated { updated: Vec<(Fiat, ExchangeRate)> },
+		/// Request exchange rate for given fiat list
+		FiatRequested { requested: Vec<Fiat> },
 	}
 
 	#[pallet::error]
@@ -177,6 +179,10 @@ pub mod pallet {
 		ErrorCalculateSystemTokenWeight,
 		/// Request for RC is already made
 		AlreadyRequested,
+		/// Invalid request,
+		NoCurrencyToRequest,
+		/// Register is invalid
+		InvalidRegister,
 	}
 
 	#[pallet::pallet]
@@ -435,15 +441,22 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(5)]
-		pub fn request_exchange_rate(origin: OriginFor<T>) -> DispatchResult {
+		pub fn request_exchange_rate(
+			origin: OriginFor<T>,
+			maybe_currency_type: Option<Fiat>,
+		) -> DispatchResult {
 			ensure_root(origin)?;
-			let requested_fiat_list = RequestFiatList::<T>::get();
-			if requested_fiat_list.is_empty() {
-				return Ok(());
+			let mut requested_fiat_list = RequestFiatList::<T>::get();
+			if let Some(currency_type) = maybe_currency_type {
+				if !requested_fiat_list.contains(&currency_type) {
+					requested_fiat_list.push(currency_type);
+				}
 			}
+			ensure!(!requested_fiat_list.is_empty(), Error::<T>::NoCurrencyToRequest);
 			let dest_id = T::AssetHubId::get();
-			T::OracleManager::request_fiat(dest_id, requested_fiat_list);
-
+			T::OracleManager::request_fiat(dest_id, requested_fiat_list.clone());
+			RequestFiatList::<T>::put(requested_fiat_list.clone());
+			Self::deposit_event(Event::<T>::FiatRequested { requested: requested_fiat_list });
 			Ok(())
 		}
 	}
@@ -652,14 +665,11 @@ impl<T: Config> Pallet<T> {
 				decimals,
 				min_balance,
 			);
-			let system_token_weight = Self::calc_system_token_weight(&currency_type, original)?;
 			Metadata::<T>::insert(original, system_token_metadata.clone());
+			let system_token_weight = Self::calc_system_token_weight(&currency_type, original)?;
 			SystemToken::<T>::insert(original, SystemTokenDetail::new(system_token_weight));
-			RequestFiatList::<T>::mutate(|request_fiat| {
-				if !request_fiat.contains(&currency_type) {
-					request_fiat.push(currency_type);
-				}
-			});
+			T::Fungibles::register(original, system_token_weight)
+				.map_err(|_| Error::<T>::ErrorRegisterSystemToken)?;
 			*is_remote = false;
 			return Ok(true);
 		}
@@ -706,9 +716,7 @@ impl<T: Config> Pallet<T> {
 			);
 			*is_remote = true;
 		} else {
-			// Relay Chain
-			T::Fungibles::register(original, system_token_weight)
-				.map_err(|_| Error::<T>::ErrorRegisterSystemToken)?;
+			return Err(Error::<T>::InvalidRegister.into());
 		}
 		Metadata::<T>::insert(original, system_token_metadata);
 		SystemToken::<T>::insert(original, SystemTokenDetail::new(system_token_weight));
