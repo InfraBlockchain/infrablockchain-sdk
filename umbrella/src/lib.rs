@@ -1309,10 +1309,6 @@ pub use sp_core_hashing;
 #[cfg(feature = "sp-core-hashing-proc-macro")]
 pub use sp_core_hashing_proc_macro;
 
-/// Host functions for common Arkworks elliptic curve operations.
-#[cfg(feature = "sp-crypto-ec-utils")]
-pub use sp_crypto_ec_utils;
-
 /// Hashing primitives.
 #[cfg(feature = "sp-crypto-hashing")]
 pub use sp_crypto_hashing;

@@ -24,8 +24,8 @@ extern crate alloc;
 #[cfg(feature = "std")]
 pub mod testing;
 
-#[cfg(feature = "bandersnatch-experimental")]
-use sp_core::bandersnatch;
+// #[cfg(feature = "bandersnatch-experimental")]
+// use sp_core::bandersnatch;
 #[cfg(feature = "bls-experimental")]
 use sp_core::{bls377, bls381, ecdsa_bls377};
 use sp_core::{
@@ -192,19 +192,19 @@ pub trait Keystore: Send + Sync {
 	) -> Result<Option<ecdsa::Signature>, Error>;
 
 	/// Returns all the bandersnatch public keys for the given key type.
-	#[cfg(feature = "bandersnatch-experimental")]
-	fn bandersnatch_public_keys(&self, key_type: KeyTypeId) -> Vec<bandersnatch::Public>;
+	// #[cfg(feature = "bandersnatch-experimental")]
+	// fn bandersnatch_public_keys(&self, key_type: KeyTypeId) -> Vec<bandersnatch::Public>;
 
 	/// Generate a new bandersnatch key pair for the given key type and an optional seed.
 	///
 	/// Returns an `bandersnatch::Public` key of the generated key pair or an `Err` if
 	/// something failed during key generation.
-	#[cfg(feature = "bandersnatch-experimental")]
-	fn bandersnatch_generate_new(
-		&self,
-		key_type: KeyTypeId,
-		seed: Option<&str>,
-	) -> Result<bandersnatch::Public, Error>;
+	// #[cfg(feature = "bandersnatch-experimental")]
+	// fn bandersnatch_generate_new(
+	// 	&self,
+	// 	key_type: KeyTypeId,
+	// 	seed: Option<&str>,
+	// ) -> Result<bandersnatch::Public, Error>;
 
 	/// Generate an bandersnatch signature for a given message.
 	///
@@ -214,13 +214,13 @@ pub trait Keystore: Send + Sync {
 	/// Returns an [`bandersnatch::Signature`] or `None` in case the given `key_type`
 	/// and `public` combination doesn't exist in the keystore.
 	/// An `Err` will be returned if generating the signature itself failed.
-	#[cfg(feature = "bandersnatch-experimental")]
-	fn bandersnatch_sign(
-		&self,
-		key_type: KeyTypeId,
-		public: &bandersnatch::Public,
-		msg: &[u8],
-	) -> Result<Option<bandersnatch::Signature>, Error>;
+	// #[cfg(feature = "bandersnatch-experimental")]
+	// fn bandersnatch_sign(
+	// 	&self,
+	// 	key_type: KeyTypeId,
+	// 	public: &bandersnatch::Public,
+	// 	msg: &[u8],
+	// ) -> Result<Option<bandersnatch::Signature>, Error>;
 
 	/// Generate a bandersnatch VRF signature for the given data.
 	///
@@ -229,13 +229,13 @@ pub trait Keystore: Send + Sync {
 	///
 	/// Returns `None` if the given `key_type` and `public` combination doesn't
 	/// exist in the keystore or an `Err` when something failed.
-	#[cfg(feature = "bandersnatch-experimental")]
-	fn bandersnatch_vrf_sign(
-		&self,
-		key_type: KeyTypeId,
-		public: &bandersnatch::Public,
-		input: &bandersnatch::vrf::VrfSignData,
-	) -> Result<Option<bandersnatch::vrf::VrfSignature>, Error>;
+	// #[cfg(feature = "bandersnatch-experimental")]
+	// fn bandersnatch_vrf_sign(
+	// 	&self,
+	// 	key_type: KeyTypeId,
+	// 	public: &bandersnatch::Public,
+	// 	input: &bandersnatch::vrf::VrfSignData,
+	// ) -> Result<Option<bandersnatch::vrf::VrfSignature>, Error>;
 
 	/// Generate a bandersnatch VRF pre-output for a given input data.
 	///
@@ -244,13 +244,13 @@ pub trait Keystore: Send + Sync {
 	///
 	/// Returns `None` if the given `key_type` and `public` combination doesn't
 	/// exist in the keystore or an `Err` when something failed.
-	#[cfg(feature = "bandersnatch-experimental")]
-	fn bandersnatch_vrf_pre_output(
-		&self,
-		key_type: KeyTypeId,
-		public: &bandersnatch::Public,
-		input: &bandersnatch::vrf::VrfInput,
-	) -> Result<Option<bandersnatch::vrf::VrfPreOutput>, Error>;
+	// #[cfg(feature = "bandersnatch-experimental")]
+	// fn bandersnatch_vrf_pre_output(
+	// 	&self,
+	// 	key_type: KeyTypeId,
+	// 	public: &bandersnatch::Public,
+	// 	input: &bandersnatch::vrf::VrfInput,
+	// ) -> Result<Option<bandersnatch::vrf::VrfPreOutput>, Error>;
 
 	/// Generate a bandersnatch ring-VRF signature for the given data.
 	///
@@ -266,15 +266,15 @@ pub trait Keystore: Send + Sync {
 	/// If not, the produced signature is just useless.
 	///
 	/// Returns `None` if the given `key_type` and `public` combination doesn't
-	/// exist in the keystore or an `Err` when something failed.
-	#[cfg(feature = "bandersnatch-experimental")]
-	fn bandersnatch_ring_vrf_sign(
-		&self,
-		key_type: KeyTypeId,
-		public: &bandersnatch::Public,
-		input: &bandersnatch::vrf::VrfSignData,
-		prover: &bandersnatch::ring_vrf::RingProver,
-	) -> Result<Option<bandersnatch::ring_vrf::RingVrfSignature>, Error>;
+	// /// exist in the keystore or an `Err` when something failed.
+	// #[cfg(feature = "bandersnatch-experimental")]
+	// fn bandersnatch_ring_vrf_sign(
+	// 	&self,
+	// 	key_type: KeyTypeId,
+	// 	public: &bandersnatch::Public,
+	// 	input: &bandersnatch::vrf::VrfSignData,
+	// 	prover: &bandersnatch::ring_vrf::RingProver,
+	// ) -> Result<Option<bandersnatch::ring_vrf::RingVrfSignature>, Error>;
 
 	/// Returns all bls12-381 public keys for the given key type.
 	#[cfg(feature = "bls-experimental")]
@@ -444,12 +444,12 @@ pub trait Keystore: Send + Sync {
 
 				self.ecdsa_sign(id, &public, msg)?.map(|s| s.encode())
 			},
-			#[cfg(feature = "bandersnatch-experimental")]
-			bandersnatch::CRYPTO_ID => {
-				let public = bandersnatch::Public::from_slice(public)
-					.map_err(|_| Error::ValidationError("Invalid public key format".into()))?;
-				self.bandersnatch_sign(id, &public, msg)?.map(|s| s.encode())
-			},
+			// #[cfg(feature = "bandersnatch-experimental")]
+			// bandersnatch::CRYPTO_ID => {
+			// 	let public = bandersnatch::Public::from_slice(public)
+			// 		.map_err(|_| Error::ValidationError("Invalid public key format".into()))?;
+			// 	self.bandersnatch_sign(id, &public, msg)?.map(|s| s.encode())
+			// },
 			#[cfg(feature = "bls-experimental")]
 			bls381::CRYPTO_ID => {
 				let public = bls381::Public::from_slice(public)
